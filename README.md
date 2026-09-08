@@ -23,14 +23,14 @@ Our approach is:
                          ▼
               ┌─────────────────────┐
               │ Complete ENTIRE     │
-              │ project              │
-              │                      │
-              │ Lexer                │
-              │ Parser               │
-              │ Syntax Tree          │
-              │ XML                  │
-              │ Error Handling       │
-              │ Testing              │
+              │ project             │
+              │                     │
+              │ Lexer               │
+              │ Parser              │
+              │ Syntax Tree         │
+              │ XML                 │
+              │ Error Handling      │
+              │ Testing             │
               └──────────┬──────────┘
                          │
                          ▼

@@ -430,6 +430,67 @@ All three members agree on:
 * Error format
 * Git workflow
 
+ **Possible architecture/design decisions**
+
+1. **Programming language — Java**
+   Use Java because it supports a clean object-oriented implementation of the lexer, parser, syntax tree and XML generator.
+
+2. **Lexer–parser separation**
+   Implement a dedicated lexer before the parser:
+   `SPL.txt → Lexer → Tokens → Parser`.
+   This keeps lexical analysis separate from syntax analysis.
+
+3. **Token representation**
+   Represent every lexical unit using a `Token` class containing at least its token type and relevant value/lexeme.
+
+4. **Token types using an enum**
+   Use a `TokenType` enum for keywords, operators, identifiers, numbers, strings and punctuation. This avoids comparing raw strings throughout the parser.
+
+5. **Recursive-descent parser**
+   Implement the parser using separate methods corresponding to grammar productions, such as `parseProgram()`, `parseInstruction()`, `parseTerm()`, etc.
+
+6. **Grammar handling / LL(1)**
+   Analyse the supplied grammar for LL(1) compatibility. Where common prefixes prevent straightforward predictive parsing, factor the grammar or otherwise adapt the parser rather than duplicating parsing logic. The specification explicitly requires your group to make this decision. 
+
+7. **Generic syntax-tree nodes**
+   Use a generic `Node` structure containing `id`, `contents`, `parent` and `children`, matching the required XML tree information. 
+
+8. **Parser builds the tree directly**
+   As the parser recognises grammar productions, it creates the corresponding syntax-tree nodes. This avoids having to parse the program a second time.
+
+9. **Separate XML generation**
+   Keep XML generation separate from parsing. The parser produces a syntax tree; an `XMLGenerator` converts that tree into `tree.xml`. This makes it easier to test the parser independently.
+
+10. **Centralised error handling and testing**
+    Use a dedicated syntax-error mechanism so errors can report what was expected and where the problem occurred. Build tests around valid and invalid SPL programs because the assignment requires meaningful syntax errors for invalid programs and a valid `tree.xml` for valid programs. 
+
+### The overall decision
+
+```text
+                    SPL.txt
+                       │
+                       ▼
+                ┌─────────────┐
+                │    Lexer    │
+                └──────┬──────┘
+                       │
+                    Tokens
+                       │
+                       ▼
+                ┌─────────────┐
+                │   Parser    │
+                └──────┬──────┘
+                       │
+                 Syntax Tree
+                       │
+                       ▼
+                ┌─────────────┐
+                │ XMLGenerator│
+                └──────┬──────┘
+                       │
+                       ▼
+                   tree.xml
+```
 ---
 
 ## Stage 2 — Lexer

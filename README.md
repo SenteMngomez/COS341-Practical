@@ -775,6 +775,32 @@ The second deadline is our **final corrected version**.
 
 This is preferable to deliberately leaving the parser/backend until after the first deadline because it means that, even if something goes wrong with the first marking, we already have the entire system implemented and can focus the remaining time on fixing it.
 
+--- 
+# 17. Possible file structure 
+SPL Compiler
+│
+├── Lexer
+│   ├── Lexer
+│   ├── Token
+│   └── TokenType
+│
+├── Parser
+│   ├── Parser
+│   ├── Grammar
+│   └── ParseException
+│
+├── Syntax Tree
+│   ├── Node
+│   └── SyntaxTree
+│
+├── XML
+│   └── XMLGenerator
+│
+├── Errors
+│   └── SyntaxError
+│
+└── Main
+
 Our target should therefore be:
 
 > **"Complete everything once. Then use the second deadline to make everything better and correct anything we got wrong."**

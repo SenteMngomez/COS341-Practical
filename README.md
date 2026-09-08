@@ -1,564 +1,178 @@
-# COS341 SPL Syntax Practical — Project Plan
+# COS341 SPL Compiler Project
 
-## 1. Project Strategy
+## 1. Project Overview
 
-Our group has chosen the **two-deadline option**.
+This project is a compiler for the **Students' Programming Language (SPL)**.
 
-However, our development strategy is **not** to split the practical into:
+The current specification released by the course focuses on the **lexical analysis and syntax analysis phases**. However, the final project is expected to grow into a complete compiler pipeline, including later phases such as:
 
-```text
-Assignment 1 = Lexer
-Assignment 2 = Parser
-```
+* Lexical analysis
+* Syntax analysis
+* Syntax tree construction
+* XML output
+* Semantic analysis
+* Type checking
+* Intermediate representation / intermediate code generation
+* Potential later compiler phases
 
-Instead, we will aim to complete the **entire practical before the first deadline**.
+The goal is therefore **not** to build a lexer and parser as two isolated programs. We are building a modular compiler that can be extended as additional specifications are released.
 
-The second deadline will then be used as a **correction, improvement and finalisation period**.
-
-Our approach is:
-
-```text
-                    DEVELOPMENT
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │ Complete ENTIRE     │
-              │ project             │
-              │                     │
-              │ Lexer               │
-              │ Parser              │
-              │ Syntax Tree         │
-              │ XML                 │
-              │ Error Handling      │
-              │ Testing             │
-              └──────────┬──────────┘
-                         │
-                         ▼
-                 FIRST DEADLINE
-                         │
-                         ▼
-                    MARKING /
-                    FEEDBACK
-                         │
-                         ▼
-              ┌─────────────────────┐
-              │ FIX + IMPROVE       │
-              │                     │
-              │ Bugs                │
-              │ Marks lost          │
-              │ Parser issues       │
-              │ Lexer issues        │
-              │ XML issues          │
-              │ Error messages      │
-              │ Testing             │
-              └──────────┬──────────┘
-                         │
-                         ▼
-                FINAL DEADLINE
-                25 OCTOBER
-```
-
-This gives us two advantages:
-
-1. We try to have a complete working solution as early as possible.
-2. We still get feedback before the final submission and can correct problems.
-
----
-
-# 2. Architecture
-
-Our group has decided to use a **separate lexer in front of the parser**.
-
-The practical explicitly allows this approach, describing the option of "plugging" a separate lexer module in front of the parser.
-
-Our final architecture is therefore:
+### Overall pipeline
 
 ```text
-                         SPL.txt
-                            │
-                            ▼
-                    ┌──────────────┐
-                    │    LEXER     │
-                    │              │
-                    │ Person 1     │
-                    └──────┬───────┘
-                           │
-                           ▼
-                     TOKEN STREAM
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    PARSER    │
-                    │              │
-                    │ Person 2     │
-                    │ Person 3     │
-                    └──────┬───────┘
-                           │
-                           ▼
-                     SYNTAX TREE
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │  XML WRITER  │
-                    │              │
-                    │ Person 3     │
-                    └──────┬───────┘
-                           │
-                           ▼
-                       tree.xml
+SPL.txt
+   │
+   ▼
+┌─────────────┐
+│    Lexer    │
+│ Characters  │
+│     ↓       │
+│   Tokens    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   Parser    │
+│   Tokens    │
+│      ↓      │
+│ Syntax Tree │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ XML Builder │
+│      ↓      │
+│  tree.xml   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────┐
+│ Future Compiler     │
+│ Phases              │
+│                     │
+│ Semantic Analysis   │
+│ Type Checking       │
+│ IR Generation       │
+│ etc.                │
+└─────────────────────┘
 ```
 
 ---
 
-# 3. What the project actually does
+# 2. Current Specification
 
-The project is a syntax analyser for SPL.
+The current SPL specification defines:
 
-We are **not** executing SPL programs.
+1. Lexical categories
+2. The SPL context-free grammar
+3. Requirements for syntax analysis
+4. Syntax error handling
+5. Syntax tree XML output
 
-The system takes:
+Every token in an SPL program must be followed by a `blank_space`, where a blank space is either:
 
-```text
-SPL.txt
-```
+* ASCII space (`32`)
+* ASCII carriage return (`13`)
 
-and analyses whether the program is syntactically correct.
+The specification defines lexical categories such as:
 
-If it is invalid:
+* `NUM`
+* `USER-DEFINED-NAME`
+* `STRING`
 
-```text
-SPL.txt
-   ↓
-Lexer
-   ↓
-Tokens
-   ↓
-Parser
-   ↓
-Syntax Error
-```
+The parser must determine whether an input program conforms to the SPL grammar.
 
-If it is valid:
+If the program is invalid, the compiler must produce a meaningful **Syntax Error Message** with helpful hints.
+
+If the program is valid, the compiler must generate:
 
 ```text
-SPL.txt
-   ↓
-Lexer
-   ↓
-Tokens
-   ↓
-Parser
-   ↓
-Syntax Tree
-   ↓
 tree.xml
 ```
 
-The practical states that an invalid SPL program must result in a meaningful syntax error and that a valid program must result in `tree.xml` containing the syntax tree.
+The XML represents the syntax tree and uses unique node IDs so that the IDs can later be used as references by future compiler phases.
 
 ---
 
-# 4. Group Division
+# 3. Development Language
 
-We are a group of three.
+## Java
 
-The division is based on **frontend vs backend**, while still requiring everyone to understand and test the complete system.
+The project will be implemented in **Java**.
 
-| Person       | Main Role | Primary Responsibility     |
-| ------------ | --------- | -------------------------- |
-| **Person 1** | Frontend  | Lexer                      |
-| **Person 2** | Backend   | Parser / Grammar           |
-| **Person 3** | Backend   | Parser / Syntax Tree / XML |
+### Why Java?
 
-This does **not** mean that each person only works on their own section.
+Java is suitable because:
 
-The complete system must be integrated and tested by everyone.
-
----
-
-# 5. Person 1 — Lexer / Frontend
-
-## Main responsibility
-
-Person 1 owns the lexer.
-
-The lexer converts:
-
-```text
-Characters → Tokens
-```
-
-For example:
-
-```text
-SPL.txt
-   ↓
-characters
-   ↓
-LEXER
-   ↓
-tokens
-```
-
-## Tasks
-
-Person 1 is responsible for:
-
-* Reading `SPL.txt`
-* Character processing
-* Tokenisation
-* Token types
-* Keyword recognition
-* Number recognition
-* User-defined-name recognition
-* String recognition
-* Symbol recognition
-* Lexical errors
-* Token position information
-* Lexer testing
-* Lexer/parser interface
-
-The practical specifies lexical categories including `NUM`, `USER-DEFINED-NAME`, and `STRING`, with their corresponding regular expressions.
+* The project naturally benefits from object-oriented design.
+* Lexer, parser, token, tree and XML components can be represented as separate classes.
+* Java provides strong support for exceptions and error handling.
+* XML generation can be implemented cleanly.
+* JUnit can be used for automated testing.
+* Java makes it easier to extend the project later with semantic analysis and intermediate code generation.
+* Packages allow each team member's area of responsibility to remain organised.
 
 ---
 
-# 6. Person 2 — Parser / Grammar
+# 4. Architecture
 
-## Main responsibility
-
-Person 2 owns the main parser logic.
-
-The parser converts:
+The project follows a modular compiler architecture.
 
 ```text
-Tokens → Valid/Invalid SPL
+src/
+│
+├── lexer/
+│   ├── Lexer.java
+│   ├── Token.java
+│   └── TokenType.java
+│
+├── parser/
+│   ├── Parser.java
+│   └── ...
+│
+├── tree/
+│   ├── Node.java
+│   └── ...
+│
+├── xml/
+│   ├── XMLGenerator.java
+│   └── ...
+│
+├── errors/
+│   ├── LexerException.java
+│   ├── ParserException.java
+│   └── ...
+│
+├── semantic/
+│   └── ...              # Future phase
+│
+├── ir/
+│   └── ...              # Future phase
+│
+└── Main.java
 ```
 
-The parser follows the supplied SPL context-free grammar.
+The important design principle is:
 
-Examples of grammar areas include:
-
-```text
-SPL_PROG
-P
-V_DECL
-F_DECL
-F_TYPE
-ALGO
-INSTR
-TERM
-BOOL
-BRANCH
-LOOP
-CALL
-```
-
-The complete grammar is provided in the practical specification.
-
-## Tasks
-
-Person 2 is responsible for:
-
-* Grammar analysis
-* LL(1) analysis
-* FIRST/FOLLOW analysis
-* Identifying conflicts
-* Deciding how to handle conflicts
-* Parser design
-* Parser implementation
-* Token consumption
-* Grammar-rule implementation
-* Syntax validation
-* Parser testing
-
-The specification specifically requires the group to analyse whether the grammar is suitable for LL(1) parsing.
+> **Each compiler phase should have a clear responsibility and communicate with the next phase through well-defined data structures.**
 
 ---
 
-# 7. Person 3 — Parser / Syntax Tree / XML
+# 5. Team Responsibilities
 
-## Main responsibility
+There are **three team members**.
 
-Person 3 works on the parser backend alongside Person 2, with particular ownership of the syntax-tree and XML side.
+The division is based on compiler components, **not on splitting the practical into separate assignment submissions**.
 
-The flow is:
-
-```text
-Parser
-   ↓
-Syntax Tree
-   ↓
-tree.xml
-```
-
-## Tasks
-
-Person 3 is responsible for:
-
-* Syntax-tree data structure
-* Tree-node creation
-* Unique node IDs
-* Parent references
-* Child references
-* Node contents
-* XML generation
-* XML validation
-* Error-output support
-* Tree testing
-
-The practical requires every tree node to have a unique ID and specifies the information required for root, inner and leaf nodes.
+Both the lexer and parser are part of the compiler frontend, but they have different responsibilities.
 
 ---
 
-# 8. Shared Responsibilities
+## Person 1 — Lexer / Lexical Analysis
 
-Although each person has an owner area, the following are **group responsibilities**:
+### Main responsibility
 
-* Understanding the specification
-* Understanding the grammar
-* LL(1) decision
-* Integration
-* Testing
-* Debugging
-* Documentation
-* Final submission
-* Test-day preparation
-
-Nobody should be in a situation where they only understand their own component.
-
-Everyone should understand:
-
-```text
-SPL.txt
-   ↓
-Lexer
-   ↓
-Tokens
-   ↓
-Parser
-   ↓
-Syntax Tree
-   ↓
-XML
-```
-
----
-
-# 9. First Deadline — Complete Everything
-
-## Goal
-
-Our goal is to have a **complete working implementation by the first deadline**.
-
-This means we should NOT plan:
-
-```text
-First deadline → only lexer
-Second deadline → parser
-```
-
-Instead:
-
-```text
-First deadline → COMPLETE PROJECT
-Second deadline → FIX + IMPROVE COMPLETE PROJECT
-```
-
-By the first deadline, we want:
-
-### Lexer
-
-```text
-SPL.txt
-   ↓
-Lexer
-   ↓
-Correct tokens
-```
-
-### Parser
-
-```text
-Tokens
-   ↓
-Parser
-   ↓
-Valid / Invalid
-```
-
-### Syntax tree
-
-```text
-Valid program
-   ↓
-Syntax tree
-```
-
-### XML
-
-```text
-Syntax tree
-   ↓
-tree.xml
-```
-
-### Error handling
-
-```text
-Invalid program
-   ↓
-Meaningful syntax error
-```
-
-### Testing
-
-All major grammar rules should already have been tested.
-
----
-
-# 10. First Deadline Development Plan
-
-## Stage 1 — Architecture
-
-All three members agree on:
-
-* Lexer design
-* Token types
-* Parser interface
-* Tree-node structure
-* XML structure
-* Error format
-* Git workflow
-
- **Possible architecture/design decisions**
-
-1. **Programming language — Java**
-   Use Java because it supports a clean object-oriented implementation of the lexer, parser, syntax tree and XML generator.
-
-2. **Lexer–parser separation**
-   Implement a dedicated lexer before the parser:
-   `SPL.txt → Lexer → Tokens → Parser`.
-   This keeps lexical analysis separate from syntax analysis.
-
-3. **Token representation**
-   Represent every lexical unit using a `Token` class containing at least its token type and relevant value/lexeme.
-
-4. **Token types using an enum**
-   Use a `TokenType` enum for keywords, operators, identifiers, numbers, strings and punctuation. This avoids comparing raw strings throughout the parser.
-
-5. **Recursive-descent parser**
-   Implement the parser using separate methods corresponding to grammar productions, such as `parseProgram()`, `parseInstruction()`, `parseTerm()`, etc.
-
-6. **Grammar handling / LL(1)**
-   Analyse the supplied grammar for LL(1) compatibility. Where common prefixes prevent straightforward predictive parsing, factor the grammar or otherwise adapt the parser rather than duplicating parsing logic. The specification explicitly requires your group to make this decision. 
-
-7. **Generic syntax-tree nodes**
-   Use a generic `Node` structure containing `id`, `contents`, `parent` and `children`, matching the required XML tree information. 
-
-8. **Parser builds the tree directly**
-   As the parser recognises grammar productions, it creates the corresponding syntax-tree nodes. This avoids having to parse the program a second time.
-
-9. **Separate XML generation**
-   Keep XML generation separate from parsing. The parser produces a syntax tree; an `XMLGenerator` converts that tree into `tree.xml`. This makes it easier to test the parser independently.
-
-10. **Centralised error handling and testing**
-    Use a dedicated syntax-error mechanism so errors can report what was expected and where the problem occurred. Build tests around valid and invalid SPL programs because the assignment requires meaningful syntax errors for invalid programs and a valid `tree.xml` for valid programs. 
-
-### The overall decision
-
-```text
-                    SPL.txt
-                       │
-                       ▼
-                ┌─────────────┐
-                │    Lexer    │
-                └──────┬──────┘
-                       │
-                    Tokens
-                       │
-                       ▼
-                ┌─────────────┐
-                │   Parser    │
-                └──────┬──────┘
-                       │
-                 Syntax Tree
-                       │
-                       ▼
-                ┌─────────────┐
-                │ XMLGenerator│
-                └──────┬──────┘
-                       │
-                       ▼
-                   tree.xml
-```
----
-
-## Stage 2 — Lexer
-
-Person 1 develops:
-
-```text
-SPL.txt → Tokens
-```
-
-Persons 2 and 3 test the output and make sure it supports the parser.
-
----
-
-## Stage 3 — Grammar
-
-Persons 2 and 3:
-
-* Analyse the grammar
-* Determine LL(1) suitability
-* Identify conflicts
-* Decide how the parser will handle them
-* Document the decision
-
----
-
-## Stage 4 — Parser
-
-Person 2 leads implementation of:
-
-```text
-Tokens → Parser
-```
-
-Person 3 assists with parser integration and testing.
-
----
-
-## Stage 5 — Syntax Tree
-
-Person 3 implements:
-
-```text
-Parser → Syntax Tree
-```
-
-with:
-
-* IDs
-* Contents
-* Parents
-* Children
-
----
-
-## Stage 6 — XML
-
-Person 3 implements:
-
-```text
-Syntax Tree → tree.xml
-```
-
----
-
-## Stage 7 — Integration
-
-All three connect:
+Convert the raw SPL source code into a stream of tokens.
 
 ```text
 SPL.txt
@@ -566,302 +180,963 @@ SPL.txt
 Lexer
    ↓
 Token stream
-   ↓
+```
+
+### Responsibilities
+
+* Read the input file.
+* Process characters.
+* Identify lexical units.
+* Recognise:
+
+  * Numbers
+  * User-defined names
+  * Strings
+  * Keywords
+  * Operators/symbols
+  * Other terminals defined by the SPL specification
+* Enforce lexical rules.
+* Detect invalid tokens.
+* Produce useful lexical error messages.
+* Create the shared `Token` representation.
+* Create the `TokenType` enum.
+* Provide the token stream to the parser.
+
+### Deliverable
+
+A working lexer that can transform:
+
+```text
+SPL source code
+```
+
+into something conceptually like:
+
+```text
+Token(TokenType.NUM, "123")
+Token(TokenType.USER_DEFINED_NAME, "x")
+Token(TokenType.ASSIGN, "=")
+...
+```
+
+The exact token representation will be decided during implementation.
+
+---
+
+# 6. Person 2 — Parser / Syntax Analysis
+
+### Main responsibility
+
+Implement the SPL grammar and determine whether the token stream forms a valid SPL program.
+
+```text
+Token stream
+      ↓
+    Parser
+      ↓
+Valid / Invalid
+```
+
+### Responsibilities
+
+* Analyse the official SPL grammar.
+* Determine whether the grammar is suitable for LL(1) parsing.
+* Calculate/check FIRST and FOLLOW sets where necessary.
+* Apply left-factoring where required.
+* Implement the parser.
+* Consume tokens produced by the lexer.
+* Detect syntax errors.
+* Produce meaningful syntax error messages.
+* Coordinate with Person 3 on syntax-tree construction.
+
+### Parser approach
+
+The intended implementation is a **recursive-descent parser** based on the LL(1) grammar.
+
+Conceptually:
+
+```text
+parseSPL_PROG()
+    ↓
+parseP()
+    ↓
+parseV_DECL()
+parseF_DECL()
+parseALGO()
+```
+
+Each grammar non-terminal can correspond to a parser method where appropriate.
+
+---
+
+# 7. LL(1) Grammar
+
+The original grammar contains productions with common prefixes that would cause problems for a straightforward LL(1) recursive-descent parser.
+
+For example:
+
+```text
+INSTR → ASSIGN | CALL
+```
+
+Both alternatives begin with:
+
+```text
+USER-DEFINED-NAME
+```
+
+Similarly:
+
+```text
+TERM → USER-DEFINED-NAME | CALL
+```
+
+Both alternatives again begin with:
+
+```text
+USER-DEFINED-NAME
+```
+
+Therefore, the grammar must be left-factored.
+
+---
+
+## Left-factored INSTR
+
+Instead of:
+
+```text
+INSTR → ASSIGN | CALL | BRANCH | LOOP | ...
+```
+
+we use:
+
+```text
+INSTR → USER-DEFINED-NAME INSTR_TAIL
+      | BRANCH
+      | LOOP
+      | ...
+```
+
+with:
+
+```text
+INSTR_TAIL → = TERM
+           | ( INPUT )
+```
+
+This allows the parser to inspect the next token after the user-defined name and determine whether it is an assignment or function call.
+
+### Example
+
+```text
+x = 5
+```
+
+becomes conceptually:
+
+```text
+USER-DEFINED-NAME
+        ↓
+      INSTR_TAIL
+        ↓
+       = TERM
+```
+
+Whereas:
+
+```text
+foo ( x )
+```
+
+becomes:
+
+```text
+USER-DEFINED-NAME
+        ↓
+      INSTR_TAIL
+        ↓
+     ( INPUT )
+```
+
+---
+
+# 8. Left-factored TERM
+
+The original grammar contains:
+
+```text
+TERM → USER-DEFINED-NAME
+     | CALL
+     | NUM
+     | ...
+```
+
+Since a function call also starts with a user-defined name, these alternatives need to be factored.
+
+The grammar can instead use:
+
+```text
+TERM → USER-DEFINED-NAME TERM_REST
+     | NUM
+     | mod ( TERM TERM )
+     | add ( TERM TERM )
+     | sub ( TERM TERM )
+     | mul ( TERM TERM )
+     | div ( TERM TERM )
+     | neg ( TERM )
+```
+
+with:
+
+```text
+TERM_REST → ε
+          | ( INPUT )
+```
+
+This means:
+
+```text
+x
+```
+
+can be parsed as a normal term, while:
+
+```text
+foo ( x )
+```
+
+can be parsed as a function call.
+
+---
+
+# 9. Current LL(1) Grammar
+
+The team's current grammar is based on the official SPL grammar with the necessary left-factoring applied.
+
+The important sections are:
+
+```text
+SPL_PROG → P $
+
+P → V_DECL : F_DECL : ALGO
+
+V_DECL → ε
+       | USER-DEFINED-NAME V_DECL
+
+F_DECL → ε
+       | F_TYPE F_DECL
+
+F_TYPE → void USER-DEFINED-NAME ( V_DECL ) { P return }
+
+F_TYPE → num USER-DEFINED-NAME ( V_DECL )
+         { P return ( TERM ) }
+
+ALGO → ε
+     | INSTR ; ALGO
+```
+
+Instructions:
+
+```text
+INSTR → print OUTP
+      | nop
+      | comment STRING
+      | USER-DEFINED-NAME INSTR_TAIL
+      | BRANCH
+      | LOOP
+```
+
+Instruction tail:
+
+```text
+INSTR_TAIL → = TERM
+           | ( INPUT )
+```
+
+Output:
+
+```text
+OUTP → ( TERM )
+     | STRING
+```
+
+Terms:
+
+```text
+TERM → USER-DEFINED-NAME TERM_REST
+     | NUM
+     | mod ( TERM TERM )
+     | add ( TERM TERM )
+     | sub ( TERM TERM )
+     | mul ( TERM TERM )
+     | div ( TERM TERM )
+     | neg ( TERM )
+```
+
+Term rest:
+
+```text
+TERM_REST → ε
+          | ( INPUT )
+```
+
+Input:
+
+```text
+INPUT → ε
+      | TERM INPUT
+```
+
+Boolean expressions:
+
+```text
+BOOL → not ( BOOL )
+     | and ( BOOL BOOL )
+     | or ( BOOL BOOL )
+     | eq ( TERM TERM )
+     | larger ( TERM TERM )
+     | lesser ( TERM TERM )
+```
+
+Branch:
+
+```text
+BRANCH → if BOOL then { ALGO } else { ALGO }
+```
+
+Loops:
+
+```text
+LOOP → COND BOOL do { ALGO }
+     | do { ALGO } COND BOOL
+```
+
+Conditions:
+
+```text
+COND → while
+     | until
+```
+
+### Important
+
+The `var` keyword has been **removed** from the proposed grammar.
+
+Therefore:
+
+```text
+V_DECL → ε
+       | USER-DEFINED-NAME V_DECL
+```
+
+matches the original specification's structure rather than introducing an additional `var` terminal.
+
+---
+
+# 10. Syntax Tree
+
+The parser must construct a syntax tree for valid programs.
+
+Each node requires a unique ID.
+
+There are three important types of nodes:
+
+### Root node
+
+The root represents the start symbol:
+
+```text
+SPL_PROG
+```
+
+It contains:
+
+* Unique ID
+* `contents`
+* IDs of its immediate children
+
+### Inner node
+
+Represents a non-terminal such as:
+
+```text
+P
+ALGO
+TERM
+BOOL
+INSTR
+```
+
+It contains:
+
+* Unique ID
+* `contents`
+* Child IDs
+* Parent ID
+
+### Leaf node
+
+Represents a terminal token that has been consumed.
+
+For example:
+
+```text
+print
+123
+x
+(
+)
+```
+
+It contains:
+
+* Unique ID
+* `contents`
+* Parent ID
+
+---
+
+# 11. Generic Node Design
+
+A generic node structure should be used instead of creating a separate Java class for every grammar production.
+
+Conceptually:
+
+```text
+Node
+├── id
+├── contents
+├── parent
+└── children
+```
+
+For example:
+
+```text
+Node {
+    id: 15
+    contents: "TERM"
+    parent: 7
+    children: [16, 17]
+}
+```
+
+This allows the tree structure to remain flexible if the grammar changes.
+
+It also makes it easier for later compiler phases to work with the tree.
+
+---
+
+# 12. XML Generation
+
+The syntax tree must eventually be written to:
+
+```text
+tree.xml
+```
+
+The XML generator should be separate from the parser.
+
+Architecture:
+
+```text
 Parser
    ↓
-Syntax tree
+Syntax Tree
+   ↓
+XMLGenerator
    ↓
 tree.xml
 ```
 
----
+This separation means:
 
-## Stage 8 — Testing
+* The parser focuses on syntax.
+* The tree classes focus on representing the tree.
+* The XML generator focuses on serialisation.
 
-The group tests:
-
-### Valid programs
-
-* Variable declarations
-* Function declarations
-* Printing
-* Assignments
-* Function calls
-* Arithmetic
-* Boolean expressions
-* If/else
-* Loops
-* Nested structures
-* Empty/nullable productions
-
-### Invalid programs
-
-* Missing tokens
-* Incorrect tokens
-* Missing semicolons
-* Missing braces
-* Missing parentheses
-* Invalid expressions
-* Invalid function calls
-* Invalid assignments
-* Invalid Boolean expressions
-* Invalid declarations
+This also makes debugging easier.
 
 ---
 
-# 11. After the First Deadline
+# 13. Error Handling
 
-Once the first version has been submitted and marked, we should treat the feedback as a **debugging report** for the project.
+The compiler must provide useful errors instead of simply crashing.
+
+There are two main categories at this stage.
+
+### Lexer errors
+
+Examples:
 
 ```text
-FIRST SUBMISSION
-       │
-       ▼
-    MARKING
-       │
-       ▼
-    FEEDBACK
-       │
-       ▼
-┌─────────────────────┐
-│ What did we get    │
-│ wrong?              │
-│                     │
-│ Lexer?              │
-│ Parser?             │
-│ Grammar?            │
-│ XML?                │
-│ Error handling?     │
-│ Testing?            │
-└──────────┬──────────┘
-           │
-           ▼
-       FIX ISSUES
-           │
-           ▼
-      RETEST SYSTEM
-           │
-           ▼
-     FINAL VERSION
+Invalid character
+Invalid number
+Unterminated string
+Invalid user-defined name
+Missing required blank space
+```
+
+### Parser errors
+
+Examples:
+
+```text
+Unexpected token
+Expected ')'
+Expected ';'
+Expected 'then'
+Expected 'else'
+Expected expression
+Unexpected end of file
+```
+
+Errors should ideally include:
+
+* What went wrong
+* Where it happened
+* What was expected
+* A useful hint for fixing it
+
+For example:
+
+```text
+Syntax Error:
+Expected ')' after function arguments.
+
+Line: 4
+Token: }
+
+Hint:
+Check that every '(' has a matching ')'.
 ```
 
 ---
 
-# 12. Second Deadline — 25 October
+# 14. Testing Strategy
 
-The second deadline is the **final submission deadline**.
+Testing will happen throughout development rather than only at the end.
 
-The final deadline is **25 October 2026** and cannot be changed.
+## Lexer tests
 
-The time between the first deadline and 25 October should therefore be treated as a **quality-improvement period**.
+Test:
 
-## Tasks after the first submission
+* Valid names
+* Valid numbers
+* Valid strings
+* Keywords
+* Symbols
+* Whitespace
+* Invalid characters
+* Invalid lexical structures
 
-### 1. Fix feedback
+---
 
-Address every issue identified in the marking.
+## Parser tests
 
-### 2. Fix bugs
+Test:
 
-Find problems that weren't caught before the first deadline.
+* Minimal valid programs
+* Variable declarations
+* Function declarations
+* Assignments
+* Function calls
+* Arithmetic expressions
+* Boolean expressions
+* Branches
+* Loops
+* Nested constructs
+* Invalid syntax
 
-### 3. Improve error messages
+---
 
-Make syntax errors more useful and understandable.
-
-### 4. Improve XML
+## Syntax tree tests
 
 Verify:
 
-* Unique IDs
-* Parent references
-* Child references
-* Correct contents
-* Correct tree structure
-* Valid XML
+* Every node has a unique ID.
+* Parent IDs are correct.
+* Child IDs are correct.
+* The root is correct.
+* Terminals appear as leaf nodes.
+* Non-terminals appear as inner nodes.
 
-### 5. Expand testing
+---
 
-Add additional valid and invalid SPL programs.
+## XML tests
 
-### 6. Integration testing
+Verify:
 
-Run the complete pipeline repeatedly:
+* `tree.xml` is generated.
+* XML is well-formed.
+* IDs are unique.
+* Parent/child references are valid.
+* The output can be rendered by a browser.
+* The structure follows the specification.
+
+---
+
+# 15. Integration Testing
+
+The entire pipeline must eventually be tested together:
 
 ```text
 SPL.txt
- ↓
+   ↓
 Lexer
- ↓
+   ↓
+Tokens
+   ↓
 Parser
- ↓
+   ↓
+Syntax Tree
+   ↓
+XML Generator
+   ↓
 tree.xml
 ```
 
-### 7. Test-day simulation
+A successful integration test should demonstrate that a valid SPL program can pass through the complete pipeline without manual intervention.
 
-Use SPL programs that the team has not previously used and verify that the entire system behaves correctly.
+Invalid programs should stop at the appropriate stage and produce a useful error.
 
 ---
 
-# 13. Timeline
+# 16. Assignment Strategy
+
+There are **two deadlines**, but we are **not splitting the project into two separate pieces**.
+
+The strategy is:
+
+> **Complete the entire currently specified practical before the first deadline, then use the period before the final deadline to fix, improve and extend the project.**
+
+This means the first deadline is treated as a **complete-project checkpoint**, not:
 
 ```text
-NOW
- │
- │
- ├── Understand specification
- │
- ├── Agree architecture
- │
- ├── Build lexer
- │
- ├── Analyse grammar
- │
- ├── Build parser
- │
- ├── Build syntax tree
- │
- ├── Build XML
- │
- ├── Error handling
- │
- ├── Testing
- │
- ▼
-FIRST DEADLINE
- │
- │
- ├── COMPLETE PROJECT
- │
- ├── Receive marking/feedback
- │
- ▼
-POST-FIRST-DEADLINE
- │
- ├── Fix lexer problems
- ├── Fix parser problems
- ├── Fix grammar problems
- ├── Fix XML problems
- ├── Improve error messages
- ├── Expand tests
- ├── Integration testing
- │
- ▼
-25 OCTOBER
- │
- ▼
-FINAL SUBMISSION
+Assignment 1 = Lexer
+Assignment 2 = Parser
+```
+
+Instead:
+
+```text
+                FIRST DEADLINE
+                     │
+                     ▼
+       ┌─────────────────────────┐
+       │ Entire current project  │
+       │ should be working       │
+       │                         │
+       │ Lexer                   │
+       │ Parser                  │
+       │ Syntax Tree             │
+       │ XML                     │
+       │ Error Handling          │
+       │ Testing                 │
+       └────────────┬────────────┘
+                    │
+                    ▼
+              Marking / Feedback
+                    │
+                    ▼
+       ┌─────────────────────────┐
+       │ Improvements             │
+       │                         │
+       │ Bug fixes               │
+       │ Feedback fixes          │
+       │ Better error handling   │
+       │ More testing            │
+       │ Integration             │
+       │ Documentation           │
+       │ Future compiler phases  │
+       └────────────┬────────────┘
+                    │
+                    ▼
+             FINAL DEADLINE
 ```
 
 ---
 
-# 14. What "Complete by the First Deadline" Means
+# 17. Development Timeline
 
-The first deadline should represent a **fully functioning minimum final product**, not a half-finished project.
+## Phase 1 — Architecture
 
-We should be able to demonstrate:
+* Agree on Java.
+* Agree on project structure.
+* Agree on token representation.
+* Agree on parser/tree interfaces.
+* Agree on Git workflow.
+* Confirm grammar.
+
+---
+
+## Phase 2 — Lexer
+
+Person 1 leads:
+
+* Lexer implementation
+* Token class
+* Token types
+* Lexical errors
+* Lexer tests
+
+Other team members integrate against the lexer interface.
+
+---
+
+## Phase 3 — Grammar / Parser
+
+Person 2 leads:
+
+* Grammar analysis
+* FIRST/FOLLOW verification
+* LL(1) verification
+* Left-factoring
+* Recursive-descent parser
+* Syntax errors
+* Parser tests
+
+---
+
+## Phase 4 — Syntax Tree / XML
+
+Person 3 leads:
+
+* Node class
+* Parent/child relationships
+* Unique IDs
+* Tree construction
+* XML generation
+* XML validation
+
+---
+
+## Phase 5 — Integration
+
+All team members:
 
 ```text
-              SPL.txt
-                 │
-                 ▼
-              LEXER
-                 │
-                 ▼
-              TOKENS
-                 │
-                 ▼
-              PARSER
-                 │
-           ┌─────┴─────┐
-           │           │
-        INVALID       VALID
-           │           │
-           ▼           ▼
-       Error       Syntax Tree
-                       │
-                       ▼
-                   tree.xml
+Lexer → Parser → Tree → XML
 ```
 
-If we achieve this before the first deadline, the second deadline becomes our opportunity to **make the project correct, robust and polished rather than trying to finish it from scratch**.
+must work together.
+
+Test using complete SPL programs.
 
 ---
 
-# 15. Definition of Done
+## Phase 6 — First Deadline
 
-## First Deadline
+The target is:
 
-We want:
+> **The entire currently specified practical is working.**
 
-* [] Lexer implemented
-* [] Token types implemented
-* [] Grammar analysed
-* [] LL(1) decision made
-* [] Parser implemented
-* [] Syntax tree implemented
-* [] Unique node IDs implemented
-* [] Parent/child relationships implemented
-* [] XML generation implemented
-* [] Syntax errors implemented
-* [] Valid SPL tested
-* [] Invalid SPL tested
-* [] Full lexer → parser → XML pipeline working
+The project should be able to:
 
-## Final Deadline — 25 October
-
-We want:
-
-* [] First-version feedback addressed
-* [] Lexer bugs fixed
-* [] Parser bugs fixed
-* [] Tree/XML issues fixed
-* [] Error messages improved
-* [] Additional testing completed
-* [] Full integration verified
-* [] Documentation completed
-* [] Final system stable
-* [] Final submission ready
+1. Read `SPL.txt`
+2. Lex the source
+3. Produce tokens
+4. Parse the tokens
+5. Detect syntax errors
+6. Build the syntax tree
+7. Generate `tree.xml`
 
 ---
 
-# 16. Our Overall Strategy
+## Phase 7 — Post-Marking Improvements
 
-### **BUILD EARLY → SUBMIT → GET FEEDBACK → FIX → FINALISE**
+After receiving marking/feedback:
 
-The first deadline is our **complete-project checkpoint**.
+* Fix discovered bugs.
+* Correct grammar issues.
+* Improve error messages.
+* Improve XML/tree generation.
+* Add missing tests.
+* Improve integration.
+* Clean up code.
+* Improve documentation.
 
-The second deadline is our **final corrected version**.
+At this point, additional compiler specifications may also have been released.
 
-This is preferable to deliberately leaving the parser/backend until after the first deadline because it means that, even if something goes wrong with the first marking, we already have the entire system implemented and can focus the remaining time on fixing it.
+---
 
---- 
-# 17. Possible file structure 
-SPL Compiler
+## Phase 8 — Future Compiler Phases
+
+As later specifications become available, extend the existing architecture with components such as:
+
+```text
+Syntax Tree
+     ↓
+Semantic Analysis
+     ↓
+Type Checking
+     ↓
+Intermediate Representation
+     ↓
+Intermediate Code Generation
+     ↓
+...
+```
+
+The existing lexer/parser/tree architecture should therefore **not** be designed as a disposable solution.
+
+---
+
+# 18. Architecture Decisions
+
+| Decision      | Choice                        | Reason                                    |
+| ------------- | ----------------------------- | ----------------------------------------- |
+| Language      | Java                          | OOP, testing, XML, extensibility          |
+| Lexer         | Separate component            | Clean lexical/syntax separation           |
+| Parser        | Recursive descent             | Natural fit for LL(1) grammar             |
+| Grammar       | LL(1) / left-factored         | Allows predictable parser decisions       |
+| Tokens        | `Token` class                 | Shared lexer/parser interface             |
+| Token types   | `TokenType` enum              | Prevents string-based token handling      |
+| Syntax tree   | Generic `Node`                | Flexible and extensible                   |
+| IDs           | Unique per node               | Required for XML and future references    |
+| XML           | Separate generator            | Keeps parser independent of output format |
+| Errors        | Centralised error handling    | Consistent user feedback                  |
+| Testing       | Automated + integration tests | Catch regressions early                   |
+| Future phases | Separate packages             | Allows compiler to grow cleanly           |
+
+---
+
+# 19. Git / Collaboration Rules
+
+Each person should work on their own feature branch.
+
+Example:
+
+```text
+main
 │
-├── Lexer
-│   ├── Lexer
-│   ├── Token
-│   └── TokenType
-│
-├── Parser
-│   ├── Parser
-│   ├── Grammar
-│   └── ParseException
-│
-├── Syntax Tree
-│   ├── Node
-│   └── SyntaxTree
-│
-├── XML
-│   └── XMLGenerator
-│
-├── Errors
-│   └── SyntaxError
-│
-└── Main
+├── feature/lexer
+├── feature/parser
+└── feature/syntax-tree
+```
 
-Our target should therefore be:
+Avoid directly committing unfinished work to `main`.
 
-> **"Complete everything once. Then use the second deadline to make everything better and correct anything we got wrong."**
+Before merging:
+
+1. Pull the latest changes.
+2. Resolve conflicts.
+3. Run tests.
+4. Verify the complete pipeline.
+5. Review the changes.
+6. Merge.
+
+### Important
+
+The interfaces between components should be agreed upon early.
+
+For example:
+
+```text
+Lexer
+   ↓
+List<Token>
+   ↓
+Parser
+   ↓
+Node
+   ↓
+XMLGenerator
+```
+
+This allows team members to work independently without constantly changing each other's code.
+
+---
+
+# 20. Definition of Done
+
+The current practical is considered complete when:
+
+### Lexer
+
+* [ ] Reads SPL source.
+* [ ] Correctly recognises all specified lexical categories.
+* [ ] Produces tokens.
+* [ ] Detects lexical errors.
+
+### Parser
+
+* [ ] Implements the SPL grammar.
+* [ ] Uses the verified LL(1) structure.
+* [ ] Correctly accepts valid programs.
+* [ ] Rejects invalid programs.
+* [ ] Produces useful syntax errors.
+
+### Syntax Tree
+
+* [ ] Tree is created for valid programs.
+* [ ] Root node is correct.
+* [ ] All nodes have unique IDs.
+* [ ] Parent/child relationships are correct.
+* [ ] Terminals are represented correctly.
+
+### XML
+
+* [ ] `tree.xml` is generated.
+* [ ] XML is well-formed.
+* [ ] Node IDs are unique.
+* [ ] Parent/child references are correct.
+* [ ] XML can be rendered in a browser.
+
+### Integration
+
+* [ ] Lexer connects to parser.
+* [ ] Parser connects to tree.
+* [ ] Tree connects to XML generator.
+* [ ] Complete test programs work.
+
+### Documentation
+
+* [ ] Architecture documented.
+* [ ] Grammar documented.
+* [ ] Team responsibilities documented.
+* [ ] Setup instructions documented.
+* [ ] Testing documented.
+* [ ] Future compiler phases accounted for.
+
+---
+
+# 21. Overall Project Philosophy
+
+The project should be treated as **one compiler developed incrementally**.
+
+We are not building:
+
+```text
+Person 1 → Lexer project
+Person 2 → Parser project
+Person 3 → XML project
+```
+
+We are building:
+
+```text
+                 SPL COMPILER
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+        FRONTEND             FUTURE PHASES
+          │                       │
+     ┌────┴────┐              Semantic
+     │         │              Analysis
+   Lexer     Parser               ↓
+     │         │              Type Checking
+     └────┬────┘                   ↓
+          │                       IR
+      Syntax Tree                  ↓
+          │                 Code Generation
+          ▼
+       tree.xml
+```
+
+The team responsibilities are simply **ownership areas within the same system**.
+
+The first deadline should therefore aim for a complete working implementation of everything currently specified.
+
+The final deadline is then used to deliver the **fully refined and extended compiler**, including corrections from marking and any later compiler-phase specifications.

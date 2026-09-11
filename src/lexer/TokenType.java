@@ -2,8 +2,8 @@ package lexer;
 
 public enum TokenType {
     // Delimiters & Markers
-    COLON(":"), SEMICOLON(";"), LPAREN("("), PAREN(")"),
-    LBRACE("{"), RBRACE("}"), ASSIGN("="), DOLLAR("$"),
+    COLON(":"), SEMICOLON(";"), LPAREN("("), RPAREN(")"),
+    LBRACE("{"), RBRACE("}"), ASSIGN("="),
     
     // Keywords
     VOID("void"), NUM_KEYWORD("num"), RETURN("return"),
@@ -18,8 +18,8 @@ public enum TokenType {
     // Dynamic Terminals
     USER_DEFINED_NAME, NUM_LITERAL, STRING_LITERAL,
     
-    // Sentinel
-    EOF;
+    // Sentinel: appended by lexer at end-of-input
+    EOF("$");
 
     private final String label;
 
@@ -35,10 +35,3 @@ public enum TokenType {
         return this.label;
     }
 }
-
-// EOF != DOLLAR.
-// Lexer reads a literal $ → emits Token(DOLLAR, "$", line, col).
-// After that (or once the character stream is exhausted),
-// lexer emits exactly one Token(EOF, null, line, col) as the final item handed to the parser.
-// Parser matches DOLLAR as part of the SPL_PROG rule (→ leaf node in the tree) and
-// separately checks for EOF afterward to confirm there's no trailing junk in the file.

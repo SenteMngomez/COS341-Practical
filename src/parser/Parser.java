@@ -37,9 +37,9 @@ public class Parser {
     private Node parseP() throws ParserException {
         Node node = new Node("P");
         node.addChild(parseVDecl());
-        match(TokenType.COLON);
+        consume(TokenType.COLON, "Expected ':' delimiter in program structure.");
         node.addChild(parseFDecl());
-        match(TokenType.COLON);
+        consume(TokenType.COLON, "Expected ':' delimiter in program structure.");
         node.addChild(parseAlgo());
         return node;
     }
@@ -70,28 +70,28 @@ public class Parser {
             node.addChild(new Node("void"));
             Token name = consume(TokenType.USER_DEFINED_NAME, "Expected function name.");
             node.addChild(new Node("USER-DEFINED-NAME", name.lexeme));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' for parameter list.");
             node.addChild(parseVDecl());
-            match(TokenType.RPAREN);
-            match(TokenType.LBRACE);
+            consume(TokenType.RPAREN, "Expected ')' after parameter list.");
+            consume(TokenType.LBRACE, "Expected '{' to start function body");
             node.addChild(parseP());
-            match(TokenType.RETURN);
-            match(TokenType.RBRACE);
+            consume(TokenType.RETURN, "Expected 'return' keyword in void function.");
+            consume(TokenType.RBRACE, "Expected '}' to end function body");
 
         } else if (match(TokenType.NUM_KEYWORD)) {
             node.addChild(new Node("num"));
             Token name = consume(TokenType.USER_DEFINED_NAME, "Expected function name.");
             node.addChild(new Node("USER-DEFINED-NAME", name.lexeme));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' for parameter list.");
             node.addChild(parseVDecl());
-            match(TokenType.RPAREN);
-            match(TokenType.LBRACE);
+            consume(TokenType.RPAREN, "Expected ')' after parameter list.");
+            consume(TokenType.LBRACE, "Expected '{' to start function body");
             node.addChild(parseP());
-            match(TokenType.RETURN);
-            match(TokenType.LPAREN);
+            consume(TokenType.RETURN, "Expected 'return' keyword in num function.");
+            consume(TokenType.LPAREN, "Expected '(' around term.");
             node.addChild(parseTerm());
-            match(TokenType.RPAREN);
-            match(TokenType.RBRACE);
+            consume(TokenType.RPAREN, "Expected ')' around term.");
+            consume(TokenType.RBRACE, "Expected '}' to end function body");
 
         } else {
             throw error("Expected 'void' or 'num' for function declaration.");
@@ -104,12 +104,12 @@ public class Parser {
         Node node = new Node("ALGO");
         //Lookahead to check if ALGO is ending (epsilon case).
         //Since ALGO is followed by } (in F_TYPE, LOOP, BRANCH) or EOF.
-        if (check(TokenType.RBRACE) || check(TokenType.EOF)) {
+        if (check(TokenType.RBRACE) || check(TokenType.RETURN) ||check(TokenType.EOF)) {
             return node; // Epsilon
         }
         
         node.addChild(parseInstr());
-        match(TokenType.SEMICOLON);
+        consume(TokenType.SEMICOLON, "Expected ';' after instruction.");
         node.addChild(parseAlgo());
         return node;
     }
@@ -155,7 +155,7 @@ public class Parser {
         } else if (match(TokenType.LPAREN)) {
             Node node = new Node("CALL");
             node.addChild(parseInput());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' to close function call.");
             return node;
         }
         throw error("Expected '=' for assignment or '(' for function call after identifier.");
@@ -165,7 +165,7 @@ public class Parser {
         Node node = new Node("OUTP");
         if (match(TokenType.LPAREN)) {
             node.addChild(parseTerm());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' after print expression.");
 
         } else if (check(TokenType.STRING_LITERAL)) {
             Token str = advance();
@@ -210,9 +210,9 @@ public class Parser {
 
         } else if (match(TokenType.NEG)) {
             node.addChild(new Node("neg"));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' after 'neg'.");
             node.addChild(parseTerm());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' after neg expression.");
 
         } else {
             throw error("Invalid expression term.");
@@ -221,10 +221,10 @@ public class Parser {
     }
     
     private void parseBinaryTermOp(Node parentNode) throws ParserException {
-        match(TokenType.LPAREN);
+        consume(TokenType.LPAREN, "Expected '(' after binary operator.");
         parentNode.addChild(parseTerm());
         parentNode.addChild(parseTerm());
-        match(TokenType.RPAREN);
+        consume(TokenType.RPAREN, "Expected ')' after binary operands.");
     }
 
     private Node parseTermRest() throws ParserException {
@@ -254,23 +254,23 @@ public class Parser {
         Node node = new Node("BOOL");
         if (match(TokenType.NOT)) {
             node.addChild(new Node("not"));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' after 'not'.");
             node.addChild(parseBool());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' after not expression.");
 
         } else if (match(TokenType.AND) || match(TokenType.OR)) {
             node.addChild(new Node(previous().lexeme));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' after logical operator.");
             node.addChild(parseBool());
             node.addChild(parseBool());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' after logical operands.");
 
         } else if (match(TokenType.EQ) || match(TokenType.LARGER) || match(TokenType.LESSER)) {
             node.addChild(new Node(previous().lexeme));
-            match(TokenType.LPAREN);
+            consume(TokenType.LPAREN, "Expected '(' after comparison operator.");
             node.addChild(parseTerm());
             node.addChild(parseTerm());
-            match(TokenType.RPAREN);
+            consume(TokenType.RPAREN, "Expected ')' after comparison operands.");
 
         } else {
             throw error("Invalid boolean expression.");
@@ -280,16 +280,16 @@ public class Parser {
 
     private Node parseBranch() throws ParserException {
         Node node = new Node("BRANCH");
-        match(TokenType.IF);
+        consume(TokenType.IF, "Expected 'if'.");
         node.addChild(parseBool());
-        match(TokenType.THEN);
-        match(TokenType.LBRACE);
+        consume(TokenType.THEN, "Expected 'then' after branch condition.");
+        consume(TokenType.LBRACE, "Expected '{' before then block.");
         node.addChild(parseAlgo());
-        match(TokenType.RBRACE);
-        match(TokenType.ELSE);
-        match(TokenType.LBRACE);
+        consume(TokenType.RBRACE, "Expected '}' after then block.");
+        consume(TokenType.ELSE, "Expected 'else' after then block.");
+        consume(TokenType.LBRACE, "Expected '{' before else block.");
         node.addChild(parseAlgo());
-        match(TokenType.RBRACE);
+        consume(TokenType.RBRACE, "Expected '}' after else block.");
         return node;
 
     }
@@ -299,16 +299,16 @@ public class Parser {
         if (check(TokenType.WHILE) || check(TokenType.UNTIL)) {
             node.addChild(parseCond());
             node.addChild(parseBool());
-            match(TokenType.DO);
-            match(TokenType.LBRACE);
+            consume(TokenType.DO, "Expected 'do' after loop condition.");
+            consume(TokenType.LBRACE, "Expected '{' to start loop body.");
             node.addChild(parseAlgo());
-            match(TokenType.RBRACE);
+            consume(TokenType.RBRACE, "Expected '}' to end loop body.");
 
         } else if (match(TokenType.DO)) {
             node.addChild(new Node("do"));
-            match(TokenType.LBRACE);
+            consume(TokenType.LBRACE, "Expected '{' after 'do'.");
             node.addChild(parseAlgo());
-            match(TokenType.RBRACE);
+            consume(TokenType.RBRACE, "Expected '}' after do block.");
             node.addChild(parseCond());
             node.addChild(parseBool());
             
@@ -333,7 +333,7 @@ public class Parser {
     //Helper Methods
 
     private boolean check(TokenType type) {
-        if (isAtEnd()) return false;
+        if (currentPosition >= tokens.size()) return false;
         return peek().type == type;
     }
 

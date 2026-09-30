@@ -2,8 +2,11 @@ package xml;
 
 import tree.Node;
 
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class XMLGenerator {
@@ -12,34 +15,25 @@ public class XMLGenerator {
         // Utility class
     }
 
-    public static void generate(Node root, String filename)
-            throws IOException {
+    public static void generate(Node root, String filename) throws IOException {
 
-        try (FileWriter writer = new FileWriter(filename)) {
-
-            writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-
-            writeNode(writer, root);
-        }
+    try (Writer writer = new OutputStreamWriter(new FileOutputStream(filename),StandardCharsets.UTF_8)) {
+        writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        writer.write("<tree>\n");
+        writeNode(writer, root);
+        writer.write("</tree>\n");
     }
+}
 
-    private static void writeNode(FileWriter writer, Node node)
-            throws IOException {
+    private static void writeNode(Writer writer, Node node) throws IOException {
 
         writer.write("<node>\n");
+        writer.write("    <id>" + node.getId() + "</id>\n");
 
-        writer.write("    <id>"
-                + node.getId()
-                + "</id>\n");
+        writer.write("    <contents>" + escapeXML(node.getContents()) + "</contents>\n");
 
-        writer.write("    <contents>"
-                + escapeXML(node.getContents())
-                + "</contents>\n");
-
-        if (node.getParent() != null) {
-            writer.write("    <parent>"
-                    + node.getParent().getId()
-                    + "</parent>\n");
+        if (node.getParent() != null) { 
+            writer.write("    <parent>"+ node.getParent().getId()+ "</parent>\n" );
         }
 
         List<Node> children = node.getChildren();
@@ -47,21 +41,24 @@ public class XMLGenerator {
         writer.write("    <children>\n");
 
         for (Node child : children) {
-            writer.write("        <child>"
-                    + child.getId()
-                    + "</child>\n");
+            writer.write("        <child>" + child.getId() + "</child>\n");
         }
 
         writer.write("    </children>\n");
-
         writer.write("</node>\n");
 
+        /*
+         * Recursively write all descendants.
+         */
         for (Node child : children) {
             writeNode(writer, child);
         }
     }
 
     private static String escapeXML(String text) {
+        if (text == null) {
+            return "";
+        }
 
         return text
                 .replace("&", "&amp;")

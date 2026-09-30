@@ -11,21 +11,44 @@ public class Node {
 
     private final int id;
 
-    // Name of the node:
-    // Non-terminal: "P", "ALGO", "TERM"
-    // Terminal: "USER-DEFINED-NAME", "NUM", etc.
+    /*
+     * Name of the node.
+     *
+     * Non-terminal examples:
+     * P, ALGO, TERM
+     *
+     * Terminal examples:
+     * USER-DEFINED-NAME, NUM
+     */
     private final String name;
 
-    // Actual lexeme for a terminal.
-    // Example: "#x", "42", "hello"
-    // null for non-terminals.
+    /*
+     * Actual lexeme for a terminal.
+     *
+     * Example:
+     * "#x"
+     * "42"
+     * "hello"
+     *
+     * null for non-terminals.
+     */
     private final String value;
 
     private Node parent;
 
     private final List<Node> children;
 
-    // Constructor for non-terminal nodes
+    /**
+     * Resets the node ID sequence.
+     * The next Node created will have ID 1.
+     */
+    public static void resetIds() {
+        idSequence.set(1);
+    }
+
+    /**
+     * Constructor for non-terminal nodes.
+     */
     public Node(String name) {
         this.id = idSequence.getAndIncrement();
         this.name = name;
@@ -34,7 +57,9 @@ public class Node {
         this.parent = null;
     }
 
-    // Constructor for terminal nodes
+    /**
+     * Constructor for terminal nodes.
+     */
     public Node(String name, String value) {
         this.id = idSequence.getAndIncrement();
         this.name = name;
@@ -72,11 +97,12 @@ public class Node {
     }
 
     public void addChild(Node child) {
-
-        if (child != null) {
-            children.add(child);
-            child.parent = this;
+        if (child == null) {
+            throw new IllegalArgumentException("Child node cannot be null");
         }
+
+        children.add(child);
+        child.parent = this;
     }
 
     public boolean isLeaf() {

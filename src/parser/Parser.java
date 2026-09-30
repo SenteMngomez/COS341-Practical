@@ -47,14 +47,20 @@ public class Parser {
     }
 
     private Node parseVDecl() throws ParserException {
-        Node node = new Node("V_DECL");
-        if (check(TokenType.USER_DEFINED_NAME)) {
-            node.addChild(new Node("USER-DEFINED-NAME", advance().lexeme));
-            node.addChild(parseVDecl());
-        }
-        // Epsilon case: If it's a COLON, V_DECL is finished.
-        return node; 
+    Node node = new Node("V_DECL");
+    Node current = node;
+
+    // Iterative loop prevents stack overflow on massive variable declaration lists
+    while (check(TokenType.USER_DEFINED_NAME)) {
+        current.addChild(new Node("USER-DEFINED-NAME", advance().lexeme));
+        Node nextVDecl = new Node("V_DECL");
+        current.addChild(nextVDecl);
+        current = nextVDecl;
     }
+
+    // Epsilon case reached (e.g. COLON)
+    return node; 
+}
 
     private Node parseFDecl() throws ParserException {
         Node node = new Node("F_DECL");
@@ -104,20 +110,27 @@ public class Parser {
 
     private Node parseAlgo(boolean inFunction) throws ParserException {
         Node node = new Node("ALGO");
-        //Lookahead to check if ALGO is ending (epsilon case).
-        //Since ALGO is followed by } (in F_TYPE, LOOP, BRANCH) or EOF.
-        if (!inFunction && check(TokenType.RETURN)) {
-            throw error("'return' is only allowed at the end of a function body.");
+        Node current = node;
+
+        while (true) {
+            // Reject top-level return statements early
+            if (!inFunction && check(TokenType.RETURN)) {
+                throw error("'return' is only allowed at the end of a function body.");
+            }
+
+            // Base case / termination lookahead (Epsilon check)
+            if (check(TokenType.RBRACE) || (inFunction && check(TokenType.RETURN)) || check(TokenType.EOF)) {
+                break;
+            }
+
+            current.addChild(parseInstr(inFunction));
+            consume(TokenType.SEMICOLON, "Expected ';' after instruction.");
+
+            Node nextAlgo = new Node("ALGO");
+            current.addChild(nextAlgo);
+            current = nextAlgo;
         }
 
-        // Lookahead to check if ALGO is ending (epsilon case).
-        if (check(TokenType.RBRACE) || (inFunction && check(TokenType.RETURN)) || check(TokenType.EOF)) {
-            return node; // Epsilon base case
-        }
-        
-        node.addChild(parseInstr(inFunction));
-        consume(TokenType.SEMICOLON, "Expected ';' after instruction.");
-        node.addChild(parseAlgo(inFunction));
         return node;
     }
 
@@ -247,13 +260,16 @@ public class Parser {
 
     private Node parseInput() throws ParserException {
         Node node = new Node("INPUT");
-        //Lookahead to check if we have reached the closing bracket of the call
-        if (check(TokenType.RPAREN)) {
-            return node; // Epsilon
+        Node current = node;
+
+        // Iterative loop processes terms until closing parenthesis ')'
+        while (!check(TokenType.RPAREN)) {
+            current.addChild(parseTerm());
+            Node nextInput = new Node("INPUT");
+            current.addChild(nextInput);
+            current = nextInput;
         }
 
-        node.addChild(parseTerm());
-        node.addChild(parseInput());
         return node;
     }
 

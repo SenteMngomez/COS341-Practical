@@ -374,7 +374,12 @@ public class Parser {
     }
 
     private Token advance() {
+        if (currentPosition >= tokens.size()) {
+            return tokens.get(tokens.size() - 1);
+        }
+
         Token consumed = peek();
+        
         if (!isAtEnd()) currentPosition++;
         return consumed;
     }

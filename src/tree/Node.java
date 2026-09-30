@@ -6,8 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Node {
 
-    private static final AtomicInteger idSequence =
-            new AtomicInteger(1);
+    private static final AtomicInteger idSequence = new AtomicInteger(1);
 
     private final int id;
 
@@ -24,6 +23,14 @@ public class Node {
     private Node parent;
 
     private final List<Node> children;
+
+    /**
+     * Resets the node ID sequence.
+     * The next Node created will have ID 1.
+     */
+    public static void resetIds() {
+        idSequence.set(1);
+    }
 
     // Constructor for non-terminal nodes
     public Node(String name) {
@@ -72,11 +79,12 @@ public class Node {
     }
 
     public void addChild(Node child) {
-
-        if (child != null) {
-            children.add(child);
-            child.parent = this;
+        if (child == null) {
+            throw new IllegalArgumentException("Child node cannot be null");
         }
+
+        children.add(child);
+        child.parent = this;
     }
 
     public boolean isLeaf() {

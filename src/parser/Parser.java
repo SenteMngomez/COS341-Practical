@@ -30,6 +30,8 @@ public class Parser {
     private Node parseSPLProg() throws ParserException {
         Node node = new Node("SPL_PROG");
         node.addChild(parseP());
+
+        //Note: TokenType.EOF correspopnds to the synthetic marker '$' appended programmatically
         match(TokenType.EOF);
         return node;
     }
@@ -351,8 +353,9 @@ public class Parser {
     }
 
     private Token advance() {
+        Token consumed = peek();
         if (!isAtEnd()) currentPosition++;
-        return previous();
+        return consumed;
     }
 
     private Token peek() {
@@ -360,6 +363,9 @@ public class Parser {
     }
 
     private Token previous() {
+        if(currentPosition == 0){
+            return null;
+        }
         return tokens.get(currentPosition - 1);
     }
 

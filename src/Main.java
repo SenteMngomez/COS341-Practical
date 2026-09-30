@@ -51,10 +51,7 @@ public class Main {
 
     private static int compile(String inputFilePath) {
         try {
-            /*
-             * Remove an old tree.xml before starting so that a failed
-             * compilation cannot leave behind an old successful result.
-             */
+            
             Files.deleteIfExists(Paths.get(OUTPUT_XML_PATH));
 
             String sourceCode = Files.readString(

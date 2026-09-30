@@ -19,7 +19,6 @@ public class Main {
     private static int exitCode = 0;
 
     public static void main(String[] args) throws InterruptedException {
-
         final String inputFilePath;
 
         if (args.length > 0) {
@@ -30,10 +29,13 @@ public class Main {
             inputFilePath = scanner.hasNextLine()
                     ? scanner.nextLine().trim()
                     : "";
+            scanner.close();
         }
 
-        // Big stack: the syntax tree is a deep chain for long programs
-        // and the XML writer is recursive.
+        /*
+         * Use a larger stack because the syntax tree and XML generator
+         * can become deeply nested for large SPL programs.
+         */
         Thread worker = new Thread(
                 null,
                 () -> exitCode = compile(inputFilePath),
@@ -48,8 +50,11 @@ public class Main {
     }
 
     private static int compile(String inputFilePath) {
-
         try {
+            /*
+             * Remove an old tree.xml before starting so that a failed
+             * compilation cannot leave behind an old successful result.
+             */
             Files.deleteIfExists(Paths.get(OUTPUT_XML_PATH));
 
             String sourceCode = Files.readString(
@@ -57,95 +62,88 @@ public class Main {
                     StandardCharsets.UTF_8
             );
 
-            System.out.println("--- Reading " + inputFilePath + " ---");
+            System.out.println(
+                    "--- Reading " + inputFilePath + " ---"
+            );
 
-            // Tokenize stream
+            // Tokenize
             Lexer lexer = new Lexer(sourceCode);
             List<Token> tokens = lexer.tokenize();
 
             System.out.println(
                     "[Lexer Success] Generated "
-                    + tokens.size()
-                    + " tokens."
+                            + tokens.size()
+                            + " tokens."
             );
 
-            // Parse tokens into syntax tree
+            // Parse
             System.out.println("\n--- Parsing ---");
 
-            // Reset node IDs BEFORE creating the syntax tree.
+            // IDs must start at 1 for every new syntax tree.
             Node.resetIds();
 
             Parser parser = new Parser(tokens);
             Node astRoot = parser.parse();
 
-            System.out.println(
-                    "[Parser Success] Syntax tree root constructed: <"
-                    + astRoot.getContents()
-                    + ">"
-            );
+            System.out.println("[Parser Success] Syntax tree root constructed: <" + astRoot.getContents() + ">");
 
-            // Generate XML output
+            // Generate XML
             System.out.println("\n--- Generating XML ---");
 
             XMLGenerator.generate(astRoot, OUTPUT_XML_PATH);
 
             System.out.println(
                     "[XML Success] Syntax tree written to "
-                    + OUTPUT_XML_PATH
+                            + OUTPUT_XML_PATH
             );
 
             return 0;
 
         } catch (LexerException e) {
-
             System.err.println(
                     "\n[Lexer Error] "
-                    + e.getMessage()
-                    + " (Line: "
-                    + e.getLine()
-                    + ", Col: "
-                    + e.getCol()
-                    + ")"
+                            + e.getMessage()
+                            + " (Line: "
+                            + e.getLine()
+                            + ", Col: "
+                            + e.getCol()
+                            + ")"
             );
 
             return 1;
 
         } catch (ParserException e) {
-
             System.err.println(
                     "\n[Parser Error] "
-                    + e.getMessage()
+                            + e.getMessage()
             );
 
             return 2;
 
         } catch (java.io.IOException e) {
-
             System.err.println(
                     "\n[File Error] Cannot read '"
-                    + inputFilePath
-                    + "' or write '"
-                    + OUTPUT_XML_PATH
-                    + "': "
-                    + e.getMessage()
+                            + inputFilePath
+                            + "' or write '"
+                            + OUTPUT_XML_PATH
+                            + "': "
+                            + e.getMessage()
             );
 
             return 3;
 
         } catch (StackOverflowError e) {
-
             System.err.println(
                     "\n[System Error] The program is too large "
-                    + "or too deeply nested to process."
+                            + "or too deeply nested to process."
             );
 
             return 4;
 
         } catch (Exception e) {
-
             System.err.println(
                     "\n[System Error] "
-                    + e
+                            + e
             );
 
             return 5;

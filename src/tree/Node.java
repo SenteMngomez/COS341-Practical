@@ -6,18 +6,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Node {
 
-    private static final AtomicInteger idSequence = new AtomicInteger(1);
+    private static final AtomicInteger idSequence =
+            new AtomicInteger(1);
 
     private final int id;
 
-    // Name of the node:
-    // Non-terminal: "P", "ALGO", "TERM"
-    // Terminal: "USER-DEFINED-NAME", "NUM", etc.
+    /*
+     * Name of the node.
+     *
+     * Non-terminal examples:
+     * P, ALGO, TERM
+     *
+     * Terminal examples:
+     * USER-DEFINED-NAME, NUM
+     */
     private final String name;
 
-    // Actual lexeme for a terminal.
-    // Example: "#x", "42", "hello"
-    // null for non-terminals.
+    /*
+     * Actual lexeme for a terminal.
+     *
+     * Example:
+     * "#x"
+     * "42"
+     * "hello"
+     *
+     * null for non-terminals.
+     */
     private final String value;
 
     private Node parent;
@@ -32,7 +46,9 @@ public class Node {
         idSequence.set(1);
     }
 
-    // Constructor for non-terminal nodes
+    /**
+     * Constructor for non-terminal nodes.
+     */
     public Node(String name) {
         this.id = idSequence.getAndIncrement();
         this.name = name;
@@ -41,7 +57,9 @@ public class Node {
         this.parent = null;
     }
 
-    // Constructor for terminal nodes
+    /**
+     * Constructor for terminal nodes.
+     */
     public Node(String name, String value) {
         this.id = idSequence.getAndIncrement();
         this.name = name;

@@ -91,10 +91,12 @@ public class Main {
 
             System.out.println("[Semantic Success] Names and scopes analysed.");
 
+            System.out.println("--- Resolved Names ---");
+            printResolvedNames(astRoot);
+            System.out.println("----------------------");
+
             for (Symbol symbol : symbolTable.getSymbols()) {
-                System.out.println(symbol.getOriginalName() + " -> "
-                                + symbol.getGeneratedName()+ " | " + (symbol.isFunction() ? "function" : "variable")
-                                + " | scope " + symbol.getScopeLevel());
+                System.out.println(symbol.getOriginalName() + " -> " + symbol.getGeneratedName()+ " | " + (symbol.isFunction() ? "function" : "variable") + " | scope " + symbol.getScopeLevel());
             }
 
             // Generate XML
@@ -126,5 +128,17 @@ public class Main {
             System.err.println("\n[System Error] " + e );
             return 5;
         } 
+    }
+
+    private static void printResolvedNames(Node node) {
+        if ("USER-DEFINED-NAME".equals(node.getName())) {
+            System.out.println(
+                    node.getContents() + " -> " + node.getGeneratedName()
+            );
+        }
+
+        for (Node child : node.getChildren()) {
+            printResolvedNames(child);
+        }
     }
 }

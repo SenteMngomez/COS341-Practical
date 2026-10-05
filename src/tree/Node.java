@@ -10,32 +10,13 @@ public class Node {
             new AtomicInteger(1);
 
     private final int id;
-
-    /*
-     * Name of the node.
-     *
-     * Non-terminal examples:
-     * P, ALGO, TERM
-     *
-     * Terminal examples:
-     * USER-DEFINED-NAME, NUM
-     */
     private final String name;
-
-    /*
-     * Actual lexeme for a terminal.
-     *
-     * Example:
-     * "#x"
-     * "42"
-     * "hello"
-     *
-     * null for non-terminals.
-     */
     private final String value;
 
-    private Node parent;
+    // Phase 2a: generated internal name
+    private String generatedName;
 
+    private Node parent;
     private final List<Node> children;
 
     /**
@@ -96,9 +77,26 @@ public class Node {
         return children;
     }
 
+    /**
+     * Returns the system-generated name assigned during
+     * Phase 2a semantic analysis.
+     */
+    public String getGeneratedName() {
+        return generatedName;
+    }
+
+    /**
+     * Assigns the system-generated name during Phase 2a.
+     */
+    public void setGeneratedName(String generatedName) {
+        this.generatedName = generatedName;
+    }
+
     public void addChild(Node child) {
         if (child == null) {
-            throw new IllegalArgumentException("Child node cannot be null");
+            throw new IllegalArgumentException(
+                    "Child node cannot be null"
+            );
         }
 
         children.add(child);

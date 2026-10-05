@@ -1,1 +1,17 @@
-: : #x = add ( 5 3 ) ;
+#global :
+void #outer ( #p ) {
+#local :
+void #inner ( #q ) {
+:
+:
+#local = #q ;
+return
+}
+:
+#local = #p ;
+#inner ( 5 ) ;
+return
+}
+:
+#global = 10 ;
+#outer ( #global ) ;

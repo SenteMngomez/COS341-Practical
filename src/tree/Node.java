@@ -6,15 +6,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Node {
 
-    private static final AtomicInteger idSequence =
-            new AtomicInteger(1);
-
+    private static final AtomicInteger idSequence =new AtomicInteger(1);
     private final int id;
     private final String name;
     private final String value;
 
     // Phase 2a: generated internal name
     private String generatedName;
+
+    // Phase 2b: carry type discoveredprivate String type;
+    private String type;
 
     private Node parent;
     private final List<Node> children;
@@ -36,6 +37,9 @@ public class Node {
         this.value = null;
         this.children = new ArrayList<Node>();
         this.parent = null;
+
+        // Phase 2b
+        this.type = "unknown";
     }
 
     /**
@@ -90,6 +94,15 @@ public class Node {
      */
     public void setGeneratedName(String generatedName) {
         this.generatedName = generatedName;
+    }
+
+    // Phase 2b
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public void addChild(Node child) {

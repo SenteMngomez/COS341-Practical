@@ -10,6 +10,8 @@ public class Symbol {
     private final int scopeLevel;
     private final Node declarationNode;
 
+    private String type;
+
     public Symbol(
             String originalName,
             String generatedName,
@@ -22,6 +24,7 @@ public class Symbol {
         this.function = function;
         this.scopeLevel = scopeLevel;
         this.declarationNode = declarationNode;
+        this.type = "unknown";
     }
 
     public String getOriginalName() {
@@ -42,5 +45,13 @@ public class Symbol {
 
     public Node getDeclarationNode() {
         return declarationNode;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

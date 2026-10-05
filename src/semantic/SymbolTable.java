@@ -39,4 +39,16 @@ public class SymbolTable {
 
         return null;
     }
+
+    public Symbol findByGeneratedName(String generatedName) {
+
+        for (Symbol symbol : symbols) {
+
+            if (symbol.getGeneratedName().equals(generatedName)) {
+                return symbol;
+            }
+        }
+
+        return null;
+    }
 }

@@ -16,10 +16,14 @@ import tree.Node;
 
 import xml.XMLGenerator;
 
+// Phase 2a
 import semantic.ScopeAnalyzer;
 import semantic.Symbol;
 import semantic.SymbolTable;
 import errors.SemanticException;
+
+// Phase 2b
+import semantic.TypeAnalyzer;
 
 public class Main {
 
@@ -98,6 +102,14 @@ public class Main {
             for (Symbol symbol : symbolTable.getSymbols()) {
                 System.out.println(symbol.getOriginalName() + " -> " + symbol.getGeneratedName()+ " | " + (symbol.isFunction() ? "function" : "variable") + " | scope " + symbol.getScopeLevel());
             }
+
+            // Phase 2b: Type Analysis
+            System.out.println("\n--- Phase 2b: Type Analysis ---");
+            
+            TypeAnalyzer typeAnalyzer = new TypeAnalyzer();
+            typeAnalyzer.analyze(astRoot, symbolTable);
+
+            System.out.println("[Semantic Success] Type analysis passed.");
 
             // Generate XML
             System.out.println("\n--- Generating XML ---");

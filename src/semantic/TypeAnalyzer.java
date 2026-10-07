@@ -362,6 +362,11 @@ public class TypeAnalyzer {
                 // NAME = TERM
                 else if ("ASSIGN".equals(next.getName())) {
 
+                    if (symbol.isFunction()) {
+                        throw new SemanticException("Cannot assign to function '"
+                                + child.getContents() + "'.");
+                    }
+
                     requireType(
                             symbol.getType(),
                             NUMERIC,
@@ -484,34 +489,38 @@ public class TypeAnalyzer {
         String name = first.getName();
 
         /*
-         * TERM -> NAME TERM_REST
+         * TERM -> NAME TERM_REST   (TERM_REST is either a CALL or empty)
+         *
+         * The parser attaches the CALL directly under TERM, so look there
+         * first, and inside a TERM_REST wrapper as a fallback.
          */
         if ("USER-DEFINED-NAME".equals(name)) {
 
             Symbol symbol = symbolFor(first);
 
-            /*
-             * If TERM_REST contains a CALL, this is a function call.
-             */
-            Node rest = child(node, "TERM_REST");
+            Node call = child(node, "CALL");
+            if (call == null) {
+                Node rest = child(node, "TERM_REST");
+                call = child(rest, "CALL");
+            }
 
-            if (rest != null && !rest.getChildren().isEmpty()) {
+            if (call != null) {
+                String callType = analyseCallWithName(call, symbol);
+                requireType(callType, NUMERIC,
+                        "A function used as a TERM must be a num function ('"
+                                + first.getContents() + "').");
+                node.setType(NUMERIC);
+                return NUMERIC;
+            }
 
-                Node call = child(rest, "CALL");
-
-                if (call != null) {
-                    return analyseCallWithName(
-                            call,
-                            symbol
-                    );
-                }
+            if (symbol.isFunction()) {
+                throw new SemanticException("Function '" + first.getContents()
+                        + "' cannot be used as a variable.");
             }
 
             if (!NUMERIC.equals(symbol.getType())) {
                 throw new SemanticException(
-                        "Variable '" + first.getContents()
-                                + "' is not numeric."
-                );
+                        "Variable '" + first.getContents() + "' is not numeric.");
             }
 
             node.setType(NUMERIC);
@@ -632,6 +641,14 @@ public class TypeAnalyzer {
                     OK,
                     "Invalid function call input."
             );
+        }
+
+        int expected = countParameters(function);
+        int given = countArguments(input);
+        if (expected != given) {
+            throw new SemanticException("Function '" + function.getOriginalName()
+                    + "' expects " + expected + " argument(s) but was called with "
+                    + given + ".");
         }
 
         /*
@@ -990,6 +1007,27 @@ public class TypeAnalyzer {
      * TREE HELPERS
      * ============================================================
      */
+
+    private int countParameters(Symbol function) {
+        Node nameNode = function.getDeclarationNode();
+        Node fType = nameNode == null ? null : nameNode.getParent();
+        Node vDecl = child(fType, "V_DECL");
+        int n = 0;
+        while (vDecl != null && !vDecl.getChildren().isEmpty()) {
+            n++;
+            vDecl = child(vDecl, "V_DECL");
+        }
+        return n;
+    }
+
+    private int countArguments(Node input) {
+        int n = 0;
+        while (input != null && !input.getChildren().isEmpty()) {
+            n++;
+            input = child(input, "INPUT");
+        }
+        return n;
+    }
 
     private Node child(Node node, String name) {
 

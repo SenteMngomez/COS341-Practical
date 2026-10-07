@@ -298,6 +298,15 @@ public class ScopeAnalyzer {
              */
             analyseP(functionP, functionScope);
 
+            /*
+             * num functions: names inside "return ( TERM )" live in the
+             * function's scope and must be resolved too.
+             */
+            Node returnTerm = findFirstChild(fType, "TERM");
+            if (returnTerm != null) {
+                analyseNodeForNames(returnTerm, functionScope);
+            }
+
             if (children.size() < 2) {
                 return;
             }
@@ -426,6 +435,27 @@ public class ScopeAnalyzer {
         }
 
         /*
+         * Nested INSTR nodes (inside BRANCH / LOOP bodies) must go through
+         * analyseInstruction so that "NAME CALL" is resolved as a function call.
+         */
+        if ("INSTR".equals(node.getName())) {
+            analyseInstruction(node, scope);
+            return;
+        }
+
+        /*
+         * TERM -> NAME CALL : a function call used as a term. The function
+         * name is a sibling of the CALL node, not a child of it.
+         */
+        if ("TERM".equals(node.getName())) {
+            List<Node> kids = node.getChildren();
+            if (kids.size() >= 2 && isUserDefinedName(kids.get(0)) && "CALL".equals(kids.get(1).getName())) {
+                resolveFunctionCall(kids.get(0), kids.get(1), scope);
+                return;
+            }
+        }
+
+        /*
          * A CALL has a NAME as its first child.
          */
         if ("CALL".equals(node.getName())) {
@@ -543,16 +573,8 @@ public class ScopeAnalyzer {
     }
 
     private Symbol findFunction(String name, Scope scope) {
-        Scope current = scope;
-        while (current != null) {
-            Symbol function = current.functions.get(name);
-            if (function != null) {
-                return function;
-            }
-            current = current.parent;
-        }
-
-        return null;
+        // Spec 2a: a called function must be listed in the F_DECL at the SAME scope level.
+        return scope.functions.get(name);
     }
 
     /*

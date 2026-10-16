@@ -1,0 +1,1 @@
+#a : : #a = 3 ; if larger ( mul ( #a #a ) add ( 4 4 ) ) then { print "y" ; } else { print "n" ; } ; if eq ( neg ( #a ) sub ( 0 3 ) ) then { print "y" ; } else { print "n" ; } ;

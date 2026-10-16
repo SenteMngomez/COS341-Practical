@@ -1,0 +1,1 @@
+#x #y #z #w : : #x = add ( 2 mul ( 3 4 ) ) ; #y = sub ( #x 4 ) ; #z = mod ( #y 3 ) ; #w = neg ( #x ) ; print ( #x ) ; print "," ; print ( #y ) ; print "," ; print ( #z ) ; print "," ; print ( #w ) ;

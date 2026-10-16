@@ -1,0 +1,9 @@
+#a #b : : #a = 5 ; #b = 7 ;
+if and ( larger ( #b #a ) not ( eq ( #a 4 ) ) ) then { print "t1," ; } else { print "f1," ; } ;
+if or ( lesser ( #b #a ) eq ( #a 4 ) ) then { print "t2," ; } else { print "f2," ; } ;
+if not ( or ( eq ( #a 5 ) eq ( #b 0 ) ) ) then { print "t3," ; } else { print "f3," ; } ;
+if and ( or ( eq ( #a 1 ) eq ( #a 5 ) ) and ( lesser ( #a #b ) larger ( #b 6 ) ) ) then { nop ; } else { print "f4," ; } ;
+if eq ( #a 5 ) then { if eq ( #b 7 ) then { print "n1," ; } else { print "n2," ; } ; } else { print "n3," ; } ;
+if not ( not ( larger ( #a #b ) ) ) then { print "t5," ; } else { print "f5," ; } ;
+if or ( and ( eq ( #a 5 ) eq ( #b 8 ) ) and ( eq ( #a 5 ) eq ( #b 7 ) ) ) then { print "t6," ; } else { print "f6," ; } ;
+if not ( and ( eq ( #a 5 ) eq ( #b 8 ) ) ) then { print "t7" ; } else { print "f7" ; } ;

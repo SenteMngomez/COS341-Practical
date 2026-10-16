@@ -1,0 +1,10 @@
+#i #j #c : : #c = 0 ; #i = 0 ;
+while lesser ( #i 4 ) do {
+  #j = 0 ;
+  until larger ( #j 2 ) do {
+    if eq ( mod ( add ( #i #j ) 2 ) 0 ) then { #c = add ( #c 1 ) ; } else { nop ; } ;
+    #j = add ( #j 1 ) ;
+  } ;
+  #i = add ( #i 1 ) ;
+} ;
+print ( #c ) ;

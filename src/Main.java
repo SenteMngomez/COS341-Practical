@@ -25,9 +25,22 @@ import errors.SemanticException;
 // Phase 2b
 import semantic.TypeAnalyzer;
 
+// Phase 3a
+import generator.CodeGenerator;
+import errors.CodeGeneratorException;
+
 public class Main {
 
     private static final String OUTPUT_XML_PATH = "tree.xml";
+
+    // Phase 3a: translated ALGO of the top-level program
+    private static final String OUTPUT_CODE_PATH = "output.cpp";
+
+    // Phase 3a test helper: ALGO wrapped in main() with variable declarations
+    private static final String OUTPUT_RUNNABLE_PATH = "output_runnable.cpp";
+
+    // Enabled by passing "--runnable" as the second command-line argument
+    private static boolean writeRunnable = false;
 
     private static int exitCode = 0;
 
@@ -35,6 +48,8 @@ public class Main {
             throws InterruptedException {
 
         final String inputFilePath;
+
+        writeRunnable = args.length > 1 && "--runnable".equals(args[1]);
 
         if (args.length > 0) {
 
@@ -57,7 +72,7 @@ public class Main {
          * Use a larger stack because the syntax tree and XML generator
          * can become deeply nested for large SPL programs.
          */
-        Thread worker = new Thread(null, () -> exitCode = compile(inputFilePath),"compiler",512L * 1024 * 1024);
+        Thread worker = new Thread(null, () -> exitCode = compile(inputFilePath), "compiler", 512L * 1024 * 1024);
         worker.start();
         worker.join();
         System.exit(exitCode);
@@ -67,7 +82,9 @@ public class Main {
 
         try {
             Files.deleteIfExists(Paths.get(OUTPUT_XML_PATH));
-            String sourceCode = Files.readString(Paths.get(inputFilePath),StandardCharsets.UTF_8);
+            Files.deleteIfExists(Paths.get(OUTPUT_CODE_PATH));
+            Files.deleteIfExists(Paths.get(OUTPUT_RUNNABLE_PATH));
+            String sourceCode = Files.readString(Paths.get(inputFilePath), StandardCharsets.UTF_8);
             System.out.println("--- Reading " + inputFilePath + " ---");
 
             // Tokenize
@@ -100,12 +117,13 @@ public class Main {
             System.out.println("----------------------");
 
             for (Symbol symbol : symbolTable.getSymbols()) {
-                System.out.println(symbol.getOriginalName() + " -> " + symbol.getGeneratedName()+ " | " + (symbol.isFunction() ? "function" : "variable") + " | scope " + symbol.getScopeLevel());
+                System.out.println(symbol.getOriginalName() + " -> " + symbol.getGeneratedName() + " | "
+                        + (symbol.isFunction() ? "function" : "variable") + " | scope " + symbol.getScopeLevel());
             }
 
             // Phase 2b: Type Analysis
             System.out.println("\n--- Phase 2b: Type Analysis ---");
-            
+
             TypeAnalyzer typeAnalyzer = new TypeAnalyzer();
             typeAnalyzer.analyze(astRoot, symbolTable);
 
@@ -113,12 +131,28 @@ public class Main {
 
             // Generate XML
             System.out.println("\n--- Generating XML ---");
-            XMLGenerator.generate( astRoot, OUTPUT_XML_PATH);
+            XMLGenerator.generate(astRoot, OUTPUT_XML_PATH);
             System.out.println("[XML Success] Syntax tree written to " + OUTPUT_XML_PATH);
+
+            // Phase 3a: Code Generation for ALGO
+            System.out.println("\n--- Phase 3a: Code Generation ---");
+
+            CodeGenerator codeGenerator = new CodeGenerator(symbolTable);
+            String targetCode = codeGenerator.generate(astRoot);
+            Files.writeString(Paths.get(OUTPUT_CODE_PATH), targetCode, StandardCharsets.UTF_8);
+            System.out.println("[CodeGen Success] Algorithm code (" + codeGenerator.getType() + ") written to "
+                    + OUTPUT_CODE_PATH);
+
+            if (writeRunnable) {
+                String runnable = codeGenerator.generateRunnable(astRoot);
+                Files.writeString(Paths.get(OUTPUT_RUNNABLE_PATH), runnable, StandardCharsets.UTF_8);
+                System.out.println("[CodeGen Success] Runnable test wrapper written to " + OUTPUT_RUNNABLE_PATH);
+            }
             return 0;
 
         } catch (LexerException e) {
-            System.err.println("\n[Lexer Error] " + e.getMessage() + " (Line: "+ e.getLine() + ", Col: " + e.getCol() + ")");
+            System.err.println(
+                    "\n[Lexer Error] " + e.getMessage() + " (Line: " + e.getLine() + ", Col: " + e.getCol() + ")");
             return 1;
 
         } catch (ParserException e) {
@@ -128,8 +162,14 @@ public class Main {
         } catch (SemanticException e) {
             System.err.println("\n[Semantic Error] " + e.getMessage());
             return 6;
+
+        } catch (CodeGeneratorException e) {
+            System.err.println("\n[CodeGen Error] " + e.getMessage());
+            return 7;
+
         } catch (java.io.IOException e) {
-            System.err.println("\n[File Error] Cannot read '" + inputFilePath + "' or write '" + OUTPUT_XML_PATH + "': " + e.getMessage());
+            System.err.println("\n[File Error] Cannot read '" + inputFilePath + "' or write '" + OUTPUT_XML_PATH + "': "
+                    + e.getMessage());
             return 3;
 
         } catch (StackOverflowError e) {
@@ -137,16 +177,15 @@ public class Main {
             return 4;
 
         } catch (Exception e) {
-            System.err.println("\n[System Error] " + e );
+            System.err.println("\n[System Error] " + e);
             return 5;
-        } 
+        }
     }
 
     private static void printResolvedNames(Node node) {
         if ("USER-DEFINED-NAME".equals(node.getName())) {
             System.out.println(
-                    node.getContents() + " -> " + node.getGeneratedName()
-            );
+                    node.getContents() + " -> " + node.getGeneratedName());
         }
 
         for (Node child : node.getChildren()) {

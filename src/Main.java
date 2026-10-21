@@ -1,42 +1,31 @@
+import errors.CodeGeneratorException;
 import errors.LexerException;
 import errors.ParserException;
-
+import errors.SemanticException;
+import generator.CodeGenerator;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Scanner;
-
 import lexer.Lexer;
 import lexer.Token;
-
 import parser.Parser;
-
-import tree.Node;
-
-import xml.XMLGenerator;
-
-// Phase 2a
 import semantic.ScopeAnalyzer;
 import semantic.Symbol;
 import semantic.SymbolTable;
-import errors.SemanticException;
-
-// Phase 2b
 import semantic.TypeAnalyzer;
-
-// Phase 3a
-import generator.CodeGenerator;
-import errors.CodeGeneratorException;
+import tree.Node;
+import xml.XMLGenerator;
 
 public class Main {
 
     private static final String OUTPUT_XML_PATH = "tree.xml";
 
-    // Phase 3a: translated ALGO of the top-level program
+    // Phase 3b: generated executable C++ with inlined function calls
     private static final String OUTPUT_CODE_PATH = "output.cpp";
 
-    // Phase 3a test helper: ALGO wrapped in main() with variable declarations
+    // Compatibility output path for the existing runnable option
     private static final String OUTPUT_RUNNABLE_PATH = "output_runnable.cpp";
 
     // Enabled by passing "--runnable" as the second command-line argument
@@ -134,8 +123,8 @@ public class Main {
             XMLGenerator.generate(astRoot, OUTPUT_XML_PATH);
             System.out.println("[XML Success] Syntax tree written to " + OUTPUT_XML_PATH);
 
-            // Phase 3a: Code Generation for ALGO
-            System.out.println("\n--- Phase 3a: Code Generation ---");
+            // Phase 3a & 3b: Code Generation with function inlining
+            System.out.println("\n--- Phase 3b: Code Generation ---");
 
             CodeGenerator codeGenerator = new CodeGenerator(symbolTable);
             String targetCode = codeGenerator.generate(astRoot);

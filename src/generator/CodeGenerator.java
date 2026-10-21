@@ -1,22 +1,20 @@
 package generator;
 
+import errors.CodeGeneratorException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
-import errors.CodeGeneratorException;
 import semantic.Symbol;
 import semantic.SymbolTable;
 import tree.Node;
 
 /**
- * Phase 3a: code generation for SPL algorithms (ALGO, INSTR, ASSIGN, TERM,
- * BRANCH, LOOP, BOOL) into the C-like target language.
- *
- * Functions and function calls are deferred to Phase 3b: a call anywhere in
- * the algorithm raises a CodeGeneratorException.
+ * Phase 3b: code generation for SPL programs into the C-like target language.
+ * Function calls are expanded by inlining their function bodies.
  *
  * Conventions used throughout:
  * - Every emitted statement ends with " ;" and a newline.
@@ -28,6 +26,8 @@ import tree.Node;
 public class CodeGenerator {
 
     private final Set<String> knownNames = new HashSet<>();
+    private final Map<String, Node> functionDefinitions = new HashMap<>();
+    private final Deque<Map<String, String>> nameScopes = new ArrayDeque<>();
 
     private StringBuilder out;
     private int varCounter;
@@ -49,45 +49,39 @@ public class CodeGenerator {
      */
 
     /**
-     * Translates the top-level ALGO of the program (the Phase 3a deliverable).
+     * Translates the complete SPL program, including the non-executable
+     * function code mine and the executable main algorithm.
      *
      * @param root the SPL_PROG node (a P node is accepted as well)
      */
     public String generate(Node root) throws CodeGeneratorException {
         Node p = topLevelP(root);
-        Node algo = childAt(p, "ALGO", 2);
-
-        reset(root);
-        transAlgo(algo);
-        return out.toString();
-    }
-
-    /**
-     * TEST HELPER (not part of 3a): wraps the translated top-level ALGO in
-     * a main() together with the declarations of the top-level variables so
-     * that the result can be compiled and run. Phase 3b replaces this.
-     */
-    public String generateRunnable(Node root) throws CodeGeneratorException {
-        Node p = topLevelP(root);
         Node vDecl = childAt(p, "V_DECL", 0);
+        Node fDecl = childAt(p, "F_DECL", 1);
         Node algo = childAt(p, "ALGO", 2);
 
         reset(root);
+        indexFunctions(root);
+
+        out.append("/* begin non-executable code mine */\n");
+        emitFunctionMine(fDecl);
+        out.append("/* end non-executable code mine */\n");
         out.append("#include <iostream>\n");
         out.append("int main()\n");
         out.append("{\n");
-
-        Node current = vDecl;
-        while (current != null && !current.getChildren().isEmpty()) {
-            List<Node> children = current.getChildren();
-            out.append(typ).append(' ').append(lookUp(children.get(0))).append(" ;\n");
-            current = children.size() > 1 ? children.get(1) : null;
-        }
-
+        emitTopLevelDeclarations(vDecl);
         transAlgo(algo);
         out.append("return 0 ;\n");
         out.append("}\n");
         return out.toString();
+    }
+
+    /**
+     * Compatibility entry point retained for the existing command-line
+     * option. Phase 3b output is executable already.
+     */
+    public String generateRunnable(Node root) throws CodeGeneratorException {
+        return generate(root);
     }
 
     /** The target type chosen by the last generate call ("int" or "float"). */
@@ -143,8 +137,11 @@ public class CodeGenerator {
                 Node tail = children.get(1);
                 if ("ASSIGN".equals(tail.getName())) {
                     transAssign(first, tail);
+                } else if ("CALL".equals(tail.getName())) {
+                    transCall(first, tail, null);
                 } else {
-                    throw deferredCall(first);
+                    throw new CodeGeneratorException("Unknown instruction tail '"
+                            + tail.getName() + "' (id " + tail.getId() + ").");
                 }
                 break;
             }
@@ -190,6 +187,220 @@ public class CodeGenerator {
         out.append(lookUp(nameNode)).append(" = ").append(v);
     }
 
+    /** Evaluates arguments and expands one function call at its use site. */
+    private void transCall(Node nameNode, Node call, String result)
+            throws CodeGeneratorException {
+        Node fType = functionDefinitions.get(lookUp(nameNode));
+
+        if (fType == null) {
+            throw new CodeGeneratorException("Function '" + nameNode.getContents()
+                    + "' has no code-generation definition.");
+        }
+
+        List<Node> arguments = inputTerms(call.getChildren().isEmpty()
+                ? null : call.getChildren().get(0));
+
+        Node parameters = childByName(fType, "V_DECL");
+        List<Node> parameterNodes = declarationNames(parameters);
+
+        if (arguments.size() != parameterNodes.size()) {
+            throw new CodeGeneratorException("Function '" + nameNode.getContents()
+                    + "' expects " + parameterNodes.size() + " argument(s) but was called with "
+                    + arguments.size() + ".");
+        }
+
+        List<String> argumentValues = new java.util.ArrayList<>();
+
+        for (Node argument : arguments) {
+            String value = newVar();
+            declare(value);
+            transTerm(argument, value);
+            argumentValues.add(value);
+        }
+
+        transFunctionInline(fType, parameterNodes, argumentValues, result);
+    }
+
+    /**
+     * Emits one fresh function expansion; labels come from the shared counter.
+     */
+    private void transFunctionInline(
+            Node fType,
+            List<Node> parameterNodes,
+            List<String> argumentValues,
+            String result
+    ) throws CodeGeneratorException {
+
+        Map<String, String> scope = new HashMap<>();
+        nameScopes.push(scope);
+
+        for (int i = 0; i < parameterNodes.size(); i++) {
+            String parameter = newVar();
+            declare(parameter);
+            scope.put(lookUpUnscoped(parameterNodes.get(i)), parameter);
+            out.append(parameter).append(" = ").append(argumentValues.get(i)).append(" ;\n");
+        }
+
+        Node body = childByName(fType, "P");
+
+        if (body == null) {
+            nameScopes.pop();
+            throw new CodeGeneratorException("Function has no body (id " + fType.getId() + ").");
+        }
+
+        emitScopedDeclarations(childByName(body, "V_DECL"), scope);
+        transAlgo(childByName(body, "ALGO"));
+
+        if ("num".equals(fType.getChildren().get(0).getName())) {
+
+            Node returnTerm = childByName(fType, "TERM");
+
+            if (returnTerm == null || result == null) {
+                nameScopes.pop();
+                throw new CodeGeneratorException("Numeric function has no return continuation.");
+            }
+
+            String returnValue = newVar();
+            declare(returnValue);
+            transTerm(returnTerm, returnValue);
+            out.append(result).append(" = ").append(returnValue).append(" ;\n");
+        }
+
+        nameScopes.pop();
+    }
+
+    /** Writes function implementations into the non-executable code mine. */
+    private void emitFunctionMine(Node fDecl) throws CodeGeneratorException {
+
+        Node current = fDecl;
+
+        while (current != null && "F_DECL".equals(current.getName())) {
+
+            if (!current.getChildren().isEmpty()) {
+
+                Node fType = current.getChildren().get(0);
+                StringBuilder previous = out;
+                out = new StringBuilder();
+
+                transFunctionMine(fType);
+
+                String mine = out.toString();
+                out = previous;
+                appendAsComments(mine);
+
+                Node body = childByName(fType, "P");
+                emitFunctionMine(childByName(body, "F_DECL"));
+            }
+
+            current = current.getChildren().size() > 1
+                    ? current.getChildren().get(1) : null;
+        }
+    }
+
+    /** Produces the commented representation of one function declaration. */
+    private void transFunctionMine(Node fType) throws CodeGeneratorException {
+
+        Node name = childByName(fType, "USER-DEFINED-NAME");
+
+        out.append("function ").append(lookUpUnscoped(name)).append("\n");
+        out.append("{\n");
+
+        List<Node> parameters = declarationNames(childByName(fType, "V_DECL"));
+
+        String result = null;
+        if ("num".equals(fType.getChildren().get(0).getName())) {
+            result = newVar();
+            declare(result);
+        }
+
+        transFunctionInline(fType, parameters, mineArguments(parameters), result);
+
+        out.append("}\n");
+    }
+
+    /** Supplies placeholders while constructing the commented code mine. */
+    private List<String> mineArguments(List<Node> parameters) {
+        List<String> arguments = new java.util.ArrayList<>();
+
+        for (Node ignored : parameters) {
+            arguments.add("/* parameter */ 0");
+        }
+        return arguments;
+    }
+
+    private void appendAsComments(String text) {
+
+        for (String line : text.split("\\R", -1)) {
+            out.append("// ").append(line).append('\n');
+        }
+    }
+
+    private void emitTopLevelDeclarations(Node vDecl) throws CodeGeneratorException {
+        Node current = vDecl;
+
+        while (current != null && !current.getChildren().isEmpty()) {
+            out.append(typ).append(' ').append(lookUpUnscoped(current.getChildren().get(0)))
+                    .append(" ;\n");
+            current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
+        }
+    }
+
+    private void emitScopedDeclarations(Node vDecl, Map<String, String> scope)
+            throws CodeGeneratorException {
+
+        Node current = vDecl;
+        while (current != null && !current.getChildren().isEmpty()) {
+            Node name = current.getChildren().get(0);
+            String generated = lookUpUnscoped(name);
+            String fresh = newVar();
+            scope.put(generated, fresh);
+            declare(fresh);
+            current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
+        }
+    }
+
+    /** Collects the names in a right-nested declaration list. */
+    private List<Node> declarationNames(Node vDecl) {
+
+        List<Node> names = new java.util.ArrayList<>();
+        Node current = vDecl;
+
+        while (current != null && "V_DECL".equals(current.getName())
+                && !current.getChildren().isEmpty()) {
+            names.add(current.getChildren().get(0));
+            current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
+        }
+        return names;
+    }
+
+    /** Collects arguments from the LL(1)-friendly right-nested INPUT list. */
+    private List<Node> inputTerms(Node input) {
+
+        List<Node> terms = new java.util.ArrayList<>();
+        Node current = input;
+
+        while (current != null && "INPUT".equals(current.getName())
+                && !current.getChildren().isEmpty()) {
+            terms.add(current.getChildren().get(0));
+            current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
+        }
+
+        return terms;
+    }
+
+    private Node childByName(Node node, String name) {
+        if (node == null) {
+            return null;
+        }
+
+        for (Node child : node.getChildren()) {
+            if (name.equals(child.getName())) {
+                return child;
+            }
+        }
+        return null;
+    }
+
     /*
      * ============================================================
      * TERM
@@ -208,7 +419,8 @@ public class CodeGenerator {
         switch (first.getName()) {
             case "USER-DEFINED-NAME":
                 if (children.size() > 1 && "CALL".equals(children.get(1).getName())) {
-                    throw deferredCall(first);
+                    transCall(first, children.get(1), result);
+                    break;
                 }
                 out.append(result).append(" = ").append(lookUp(first)).append(" ;\n");
                 break;
@@ -462,6 +674,29 @@ public class CodeGenerator {
         varCounter = 0;
         labelCounter = 0;
         typ = containsFloatFeature(root) ? "float" : "int";
+        functionDefinitions.clear();
+        nameScopes.clear();
+    }
+
+    /** Indexes all function declarations by their semantic generated names. */
+    private void indexFunctions(Node node) {
+        if (node == null) {
+            return;
+        }
+
+        if ("F_DECL".equals(node.getName())) {
+            List<Node> children = node.getChildren();
+            if (!children.isEmpty() && "F_TYPE".equals(children.get(0).getName())) {
+                Node name = childByName(children.get(0), "USER-DEFINED-NAME");
+                if (name != null && name.getGeneratedName() != null) {
+                    functionDefinitions.put(name.getGeneratedName(), children.get(0));
+                }
+            }
+        }
+
+        for (Node child : node.getChildren()) {
+            indexFunctions(child);
+        }
     }
 
     /*
@@ -494,17 +729,23 @@ public class CodeGenerator {
     // lookUp(NAME, SymbT): the Phase 2a internal name, verified against the symbol
     // table.
     private String lookUp(Node nameNode) throws CodeGeneratorException {
+        String generated = lookUpUnscoped(nameNode);
+        for (Map<String, String> scope : nameScopes) {
+            String renamed = scope.get(generated);
+            if (renamed != null) {
+                return renamed;
+            }
+        }
+        return generated;
+    }
+
+    private String lookUpUnscoped(Node nameNode) throws CodeGeneratorException {
         String generated = nameNode.getGeneratedName();
         if (generated == null || !knownNames.contains(generated)) {
             throw new CodeGeneratorException("Name '" + nameNode.getContents()
                     + "' has no symbol-table entry.");
         }
         return generated;
-    }
-
-    private CodeGeneratorException deferredCall(Node nameNode) {
-        return new CodeGeneratorException("Function call '" + nameNode.getContents()
-                + "' cannot be translated yet: functions and calls are handled in Phase 3b.");
     }
 
     private Node topLevelP(Node root) throws CodeGeneratorException {
@@ -536,4 +777,4 @@ public class CodeGenerator {
         }
         return s == null ? "" : s;
     }
-} 
+}

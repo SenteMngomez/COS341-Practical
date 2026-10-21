@@ -1,0 +1,25 @@
+#first #second :
+
+num #sumto ( #limit ) {
+    #i #sum : :
+
+    #i = 0 ;
+    #sum = 0 ;
+    comment "sum-values-to-limit" ;
+
+    while lesser ( #i #limit ) do {
+        #sum = add ( #sum #i ) ;
+        #i = add ( #i 1 ) ;
+    } ;
+
+    return ( #sum )
+}
+
+:
+
+comment "calling-loop-function-twice" ;
+#first = #sumto ( 5 ) ;
+#second = #sumto ( 3 ) ;
+print ( #first ) ;
+print "," ;
+print ( #second ) ;

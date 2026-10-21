@@ -1,0 +1,1 @@
+#result : num #increment ( #value ) { : : return ( add ( #value 1 ) ) } : #result = #increment ( 1 2 ) ; print ( #result ) ;

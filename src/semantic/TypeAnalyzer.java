@@ -1,8 +1,7 @@
 package semantic;
 
-import java.util.List;
-
 import errors.SemanticException;
+import java.util.List;
 import tree.Node;
 
 public class TypeAnalyzer {

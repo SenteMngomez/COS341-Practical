@@ -1,0 +1,1 @@
+#c : num #inc ( ) { : : #c = add ( #c 1 ) ; return ( #c ) } : #c = 0 ; if or ( eq ( 1 2 ) eq ( #inc ( ) 99 ) ) then { print "t" ; } else { print "f" ; } ; print ( #c ) ;

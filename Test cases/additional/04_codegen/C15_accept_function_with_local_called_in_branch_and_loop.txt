@@ -1,0 +1,1 @@
+#i : void #p ( #n ) { #loc : : #loc = add ( #n 1 ) ; print ( #loc ) ; return } : #i = 0 ; if eq ( #i 0 ) then { #p ( 5 ) ; } else { nop ; } ; until eq ( #i 2 ) do { #p ( #i ) ; #i = add ( #i 1 ) ; } ;

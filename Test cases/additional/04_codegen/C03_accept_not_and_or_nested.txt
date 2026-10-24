@@ -1,0 +1,1 @@
+#a : : #a = 5 ; if not ( and ( not ( and ( larger ( #a 1 ) lesser ( #a 10 ) ) ) not ( or ( eq ( #a 5 ) eq ( #a 6 ) ) ) ) ) then { print "a" ; } else { print "b" ; } ;

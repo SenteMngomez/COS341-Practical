@@ -1,0 +1,1 @@
+#r : num #f ( #a ) { : num #g ( #b ) { : num #h ( #c ) { : : return ( add ( #c 1 ) ) } : return ( add ( #h ( #b ) 10 ) ) } : return ( add ( #g ( #a ) 100 ) ) } : #r = #f ( 1 ) ; print ( #r ) ; print "," ; #r = #f ( #r ) ; print ( #r ) ;

@@ -1,0 +1,1 @@
+#n : void #cnt ( #k ) { #j : : #j = 0 ; while lesser ( #j #k ) do { #j = add ( #j 1 ) ; } ; print ( #j ) ; return } : #n = 0 ; do { #n = add ( #n 1 ) ; #cnt ( #n ) ; } until eq ( #n 3 ) ;

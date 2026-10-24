@@ -1,0 +1,1 @@
+#r : void #a ( ) { #t : : #t = 1 ; print ( #t ) ; return } void #b ( ) { #t : : #t = 2 ; print ( #t ) ; return } : #a ( ) ; #b ( ) ;

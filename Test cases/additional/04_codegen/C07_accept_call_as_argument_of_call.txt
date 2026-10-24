@@ -1,0 +1,1 @@
+#r : num #f ( #a #b ) { : : return ( sub ( #a #b ) ) } num #g ( #x ) { : : return ( mul ( #x 2 ) ) } : #r = #f ( #g ( 5 ) 3 ) ; print ( #r ) ;

@@ -1,0 +1,1 @@
+#a #x #y #z : num #cnt ( #n ) { #steps : : #steps = 0 ; while larger ( #n 0 ) do { #n = sub ( #n 2 ) ; #steps = add ( #steps 1 ) ; } ; return ( #steps ) } : #a = 7 ; #x = #cnt ( #a ) ; #y = add ( #x 10 ) ; #z = #cnt ( #y ) ; print ( #x ) ; print "," ; print ( #z ) ;

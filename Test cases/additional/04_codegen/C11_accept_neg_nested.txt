@@ -1,0 +1,1 @@
+#a : : #a = neg ( neg ( 4 ) ) ; print ( #a ) ; print ( neg ( 3 ) ) ;

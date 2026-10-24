@@ -1,0 +1,106 @@
+SPL ADDITIONAL TEST CASES - EXPECTED RESULTS
+=============================================
+ACCEPT <output>  : compiler must succeed; the generated C++ must compile and print exactly <output> (empty = prints nothing)
+ERROR <Stage>   : compiler must stop with that error stage; message must contain the quoted text
+
+Test files are pure SPL (no header comments) so they can be fed to the compiler as-is.
+
+
+[01_scoping]
+S01_accept_level2_uses_global.txt                                    ACCEPT  output='6'
+S02_accept_same_name_three_levels_innermost_wins.txt                 ACCEPT  output='321'
+S03_accept_sibling_functions_same_local_name.txt                     ACCEPT  output='12'
+S04_err_function_calls_sibling.txt                                   ERROR   Semantic error containing 'has no declaration'
+S05_err_main_calls_subfunction.txt                                   ERROR   Semantic error containing 'has no declaration'
+S06_err_duplicate_function_same_level.txt                            ERROR   Semantic error containing 'more than one declaration'
+S07_accept_inner_function_same_name_is_not_recursion.txt             ACCEPT  output=''
+S08_err_inner_function_calls_own_name_is_recursion.txt               ERROR   Semantic error containing 'recursion'
+S09_err_sideways_declaration_A21.txt                                 ERROR   Semantic error containing 'no declaration'
+S10_accept_ancestor_declaration_A21.txt                              ACCEPT  output='1'
+S11_err_local_masks_parameter.txt                                    ERROR   Semantic error containing 'masking'
+S12_err_double_declaration_same_level.txt                            ERROR   Semantic error containing 'more than one declaration'
+S13_err_direct_recursion.txt                                         ERROR   Semantic error containing 'recursion'
+S14_err_undeclared_variable.txt                                      ERROR   Semantic error containing 'no declaration'
+S15_err_duplicate_parameter.txt                                      ERROR   Semantic error containing 'more than one declaration'
+S16_err_undeclared_function.txt                                      ERROR   Semantic error containing 'no declaration'
+S17_accept_param_shadows_global.txt                                  ACCEPT  output='91'
+
+[02_types]
+Y01_err_void_call_used_as_term.txt                                   ERROR   Semantic error containing 'num function'
+Y02_err_assign_to_function_name.txt                                  ERROR   Semantic error containing 'no declaration'
+Y03_err_function_name_used_as_variable.txt                           ERROR   Semantic error containing 'no declaration'
+Y04_err_num_function_as_instruction.txt                              ERROR   Semantic error containing 'must be a procedure'
+Y05_err_mod_main_div_in_uncalled_function.txt                        ERROR   Semantic error containing 'float-integer-conflict'
+Y06_err_decimal_in_uncalled_function_with_mod.txt                    ERROR   Semantic error containing 'decimal'
+Y07_err_too_few_arguments.txt                                        ERROR   Semantic error containing 'expects 2'
+Y08_err_too_many_arguments.txt                                       ERROR   Semantic error containing 'expects 0'
+Y09_accept_mod_with_integers.txt                                     ACCEPT  output='2'
+Y10_accept_div_gives_float_program.txt                               ACCEPT  output='0.25'
+Y11_err_mod_and_div_both_present.txt                                 ERROR   Semantic error containing 'float-integer-conflict'
+
+[03_numbers]
+N01_accept_negative_decimal.txt                                      ACCEPT  output='-0.5'
+N02_accept_zero.txt                                                  ACCEPT  output='0'
+N03_lexerr_zero_point_zero.txt                                       ERROR   Lexer error containing 'Invalid token'
+N04_lexerr_negative_zero.txt                                         ERROR   Lexer error containing 'Invalid token'
+N05_lexerr_leading_zeros.txt                                         ERROR   Lexer error containing 'Invalid token'
+N06_lexerr_trailing_zero_decimal.txt                                 ERROR   Lexer error containing 'Invalid token'
+N07_lexerr_no_integer_part.txt                                       ERROR   Lexer error containing 'Invalid token'
+N08_lexerr_no_fraction_digits.txt                                    ERROR   Lexer error containing 'Invalid token'
+N09_accept_negative_integer.txt                                      ACCEPT  output='-42'
+N10_accept_multi_digit_decimal.txt                                   ACCEPT  output='10.25'
+
+[04_codegen]
+C01_accept_or_short_circuits_call.txt                                ACCEPT  output='t0'
+C02_accept_or_second_operand_call_evaluated.txt                      ACCEPT  output='f1'
+C03_accept_not_and_or_nested.txt                                     ACCEPT  output='a'
+C04_accept_empty_bodies.txt                                          ACCEPT  output='ok'
+C05_accept_do_until_body_calls_function_with_loop.txt                ACCEPT  output='123'
+C06_accept_three_level_nesting_called_twice.txt                      ACCEPT  output='112,223'
+C07_accept_call_as_argument_of_call.txt                              ACCEPT  output='7'
+C08_accept_print_call_modifies_global.txt                            ACCEPT  output='122'
+C09_accept_zero_and_five_parameters.txt                              ACCEPT  output='17'
+C10_accept_empty_program.txt                                         ACCEPT  output=''
+C11_accept_neg_nested.txt                                            ACCEPT  output='4-3'
+C12_accept_all_four_loop_forms.txt                                   ACCEPT  output='3062'
+C13_accept_comment_string_nop.txt                                    ACCEPT  output='a,b:c!d?e-f'
+C14_accept_uninitialised_locals_read_zero.txt                        ACCEPT  output='00'
+C15_accept_function_with_local_called_in_branch_and_loop.txt         ACCEPT  output='612'
+C16_accept_labels_unique_across_repeated_inlining.txt                ACCEPT  output='4,7'
+C17_accept_nested_function_modifies_parent_local.txt                 ACCEPT  output='30'
+C18_accept_call_in_return_term_and_loop_condition.txt                ACCEPT  output='3'
+
+[05_parser_lexer]
+P01_parseerr_missing_final_semicolon.txt                             ERROR   Parser error containing "Expected ';'"
+P02_parseerr_return_at_top_level.txt                                 ERROR   Parser error containing 'return'
+P03_parseerr_return_inside_if_in_function.txt                        ERROR   Parser error containing 'Expected'
+P04_parseerr_missing_colon.txt                                       ERROR   Parser error containing "Expected ':'"
+P05_lexerr_tab_character.txt                                         ERROR   Lexer error containing 'Invalid token'
+P06_accept_crlf_line_endings.txt                                     ACCEPT  output='1'
+P07_lexerr_string_with_space.txt                                     ERROR   Lexer error containing 'Invalid token'
+P08_lexerr_string_uppercase.txt                                      ERROR   Lexer error containing 'Invalid token'
+P09_parseerr_if_without_else.txt                                     ERROR   Parser error containing "Expected 'else'"
+P10_lexerr_name_without_hash.txt                                     ERROR   Lexer error containing 'Invalid token'
+P11_lexerr_uppercase_in_name.txt                                     ERROR   Lexer error containing 'Invalid token'
+P12_lexerr_missing_space_between_tokens.txt                          ERROR   Lexer error containing 'Invalid token'
+P13_lexerr_dollar_in_input.txt                                       ERROR   Lexer error containing "'$'"
+P14_parseerr_unclosed_function_call.txt                              ERROR   Parser error containing 'Invalid expression term'
+P15_parseerr_loop_missing_do.txt                                     ERROR   Parser error containing "Expected 'do'"
+P16_parseerr_function_missing_return.txt                             ERROR   Parser error containing "Expected 'return'"
+P17_parseerr_num_function_return_without_term.txt                    ERROR   Parser error containing "Expected '('"
+P18_accept_empty_param_and_empty_input_lists.txt                     ACCEPT  output='1'
+P19_parseerr_empty_file.txt                                          ERROR   Parser error containing "Expected ':'"
+P20_lexerr_stray_symbol.txt                                          ERROR   Lexer error containing 'Invalid token'
+
+[06_scale]
+Z01_accept_50_nested_ifs.txt                                         ACCEPT  output='x'
+Z02_accept_20000_instructions.txt                                    ACCEPT  output='20000'
+Z03_accept_exponential_inlining_depth10.txt                          ACCEPT  output='512'
+Z04_accept_2000_variables.txt                                        ACCEPT  output='2000'
+Z05_accept_arithmetic_nesting_depth1000.txt                          ACCEPT  output='1001'
+Z06_accept_300_sibling_functions.txt                                 ACCEPT  output='done'
+
+Notes:
+- P13 documents current behaviour: a literal '$' in the input is rejected by the lexer.
+- P05 contains a real TAB character; P06 uses CRLF line endings.
+- Z-tests are generated programs (50 nested ifs, 20000 instructions, depth-10 exponential inlining, 2000 variables, depth-1000 arithmetic, 300 sibling functions).

@@ -1,0 +1,1 @@
+#r : num #f ( #a ) { #loc : num #g ( #b ) { : : #loc = add ( #loc #b ) ; return ( #loc ) } : #loc = 10 ; #loc = #g ( #a ) ; return ( mul ( #loc 2 ) ) } : #r = #f ( 5 ) ; print ( #r ) ;

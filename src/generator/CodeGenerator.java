@@ -340,7 +340,7 @@ public class CodeGenerator {
 
         while (current != null && !current.getChildren().isEmpty()) {
             out.append(typ).append(' ').append(lookUpUnscoped(current.getChildren().get(0)))
-                    .append(" ;\n");
+                    .append(" = 0 ;\n");
             current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
         }
     }
@@ -354,7 +354,7 @@ public class CodeGenerator {
             String generated = lookUpUnscoped(name);
             String fresh = newVar();
             scope.put(generated, fresh);
-            declare(fresh);
+            declareUserVariable(fresh);
             current = current.getChildren().size() > 1 ? current.getChildren().get(1) : null;
         }
     }
@@ -504,7 +504,7 @@ public class CodeGenerator {
                 // B1 true -> T ; otherwise fall into B2.
                 String next = newLabel();
                 transBool(children.get(1), t, next, next);
-                out.append(next).append(" : /* or */\n");
+                out.append(next).append(" : ; /* or */\n");
                 transBool(children.get(2), t, f, fall);
                 break;
             }
@@ -513,7 +513,7 @@ public class CodeGenerator {
                 // B1 false -> F ; otherwise fall into B2.
                 String next = newLabel();
                 transBool(children.get(1), next, f, next);
-                out.append(next).append(" : /* and */\n");
+                out.append(next).append(" : ; /* and */\n");
                 transBool(children.get(2), t, f, fall);
                 break;
             }
@@ -578,12 +578,12 @@ public class CodeGenerator {
 
         out.append("/* if */\n");
         transBool(bool, la, lb, lb);
-        out.append(lb).append(" : /* else */\n");
+        out.append(lb).append(" : ; /* else */\n");
         transAlgo(algoFalse);
         out.append("goto ").append(lc).append(" ;\n");
-        out.append(la).append(" : /* then */\n");
+        out.append(la).append(" : ; /* then */\n");
         transAlgo(algoTrue);
-        out.append(lc).append(" : /* continue */\n");
+        out.append(lc).append(" : ; /* continue */\n");
     }
 
     /*
@@ -617,16 +617,16 @@ public class CodeGenerator {
         String le = newLabel();
         String d = newLabel();
 
-        out.append(ls).append(" : /* ").append(cond).append(" */\n");
+        out.append(ls).append(" : ; /* ").append(cond).append(" */\n");
         if ("until".equals(cond)) {
             transBool(bool, le, d, d); // condition true -> exit
         } else {
             transBool(bool, d, le, d); // condition false -> exit
         }
-        out.append(d).append(" : /* do */\n");
+        out.append(d).append(" : ; /* do */\n");
         transAlgo(body);
         out.append("goto ").append(ls).append(" ;\n");
-        out.append(le).append(" : /* exit */\n");
+        out.append(le).append(" : ; /* exit */\n");
     }
 
     // do { ALGO } while BOOL (do-until BOOL == do-while not(BOOL))
@@ -634,7 +634,7 @@ public class CodeGenerator {
         String ld = newLabel();
         String le = newLabel();
 
-        out.append(ld).append(" : /* do */\n");
+        out.append(ld).append(" : ; /* do */\n");
         transAlgo(body);
         out.append("/* ").append(cond).append(" */\n");
         if ("while".equals(cond)) {
@@ -642,7 +642,7 @@ public class CodeGenerator {
         } else {
             transBool(bool, le, ld, le); // condition true -> exit
         }
-        out.append(le).append(" : /* exit */\n");
+        out.append(le).append(" : ; /* exit */\n");
     }
 
     /*
@@ -661,6 +661,11 @@ public class CodeGenerator {
 
     private void declare(String var) {
         out.append(typ).append(' ').append(var).append(" ;\n");
+    }
+
+    private void declareUserVariable(String var) {
+        out.append(typ).append(' ').append(var).append(" ;\n");
+        out.append(var).append(" = 0 ;\n");
     }
 
     /*

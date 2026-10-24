@@ -546,6 +546,11 @@ public class ScopeAnalyzer {
         String name = nameNode.getContents();
         Symbol function = findFunction(name, scope);
 
+        if (function == null && scope.functionSymbol != null
+                && scope.functionSymbol.getOriginalName().equals(name)) {
+            function = scope.functionSymbol;
+        }
+
         if (function == null) {
             throw new SemanticException("Function '" + name+ "' has no declaration.");
         }

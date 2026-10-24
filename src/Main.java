@@ -93,6 +93,11 @@ public class Main {
 
             System.out.println("[Parser Success] Syntax tree root constructed: <" + astRoot.getContents() + ">");
 
+            // Keep Phase 1 output available even when later semantic phases fail.
+            System.out.println("\n--- Generating XML ---");
+            XMLGenerator.generate(astRoot, OUTPUT_XML_PATH);
+            System.out.println("[XML Success] Syntax tree written to " + OUTPUT_XML_PATH);
+
             // Phase 2a: Names and Scopes
             System.out.println("\n--- Phase 2a: Names and Scopes ---");
 
@@ -118,11 +123,6 @@ public class Main {
 
             System.out.println("[Semantic Success] Type analysis passed.");
 
-            // Generate XML
-            System.out.println("\n--- Generating XML ---");
-            XMLGenerator.generate(astRoot, OUTPUT_XML_PATH);
-            System.out.println("[XML Success] Syntax tree written to " + OUTPUT_XML_PATH);
-
             // Phase 3a & 3b: Code Generation with function inlining
             System.out.println("\n--- Phase 3b: Code Generation ---");
 
@@ -145,7 +145,8 @@ public class Main {
             return 1;
 
         } catch (ParserException e) {
-            System.err.println("\n[Parser Error] " + e.getMessage());
+            System.err.println("\n[Parser Error] " + e.getMessage() + " (Line: " + e.getLine() + ", Col: "
+                    + e.getCol() + ", Lexeme: '" + e.getLexeme() + "')");
             return 2;
 
         } catch (SemanticException e) {

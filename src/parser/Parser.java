@@ -400,6 +400,7 @@ public class Parser {
     }
 
     private ParserException error(String message) {
-        return new ParserException(message + " Found: " + peek().type, peek().line);
+        Token token = peek();
+        return new ParserException(message + " Found: " + token.type, token.line, token.col, token.lexeme);
     }
 }
